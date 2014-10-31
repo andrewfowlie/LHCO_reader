@@ -39,11 +39,8 @@ The property keys from the LHCO file are
 - hadem
 These properties are floats.
 
-
-We add an additional property,
-- vector
-The objects four-momentum, with a special four-vector class.
-
+We add an additional property, a function, vector(), which returns a
+four-momentum object.
 """
 
 __author__ = "Andrew Fowlie"
@@ -407,9 +404,6 @@ class Event(dict):
         string -- String of single LHCO event from an LHCO file
         dictionary -- Dictionary or zipped lists for new dictionary
         """
-
-        if dictionary:
-            dict.__init__(self, dictionary)  # Ordinary dictionary initialization
         self.__lines = lines  # Save list of lines of whole event
 
         # Dictionary of object names that appear in event, index corresponds
@@ -436,6 +430,9 @@ class Event(dict):
                 warnings.warn("Inconsistent numbers of objects in event:\n" + str(self))
         else:
             warnings.warn("Adding empty event")
+
+        if dictionary:
+            dict.__init__(self, dictionary)  # Ordinary dictionary initialization
 
     def __str__(self):
         """
