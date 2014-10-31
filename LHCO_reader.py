@@ -369,12 +369,32 @@ class Events(list):
         plt.show()  # Show the plot on screen
 
     def __getslice__(self,i,j):
-        """ Slicing returns an Events class rather than a list. """
-        return Events(list.__getslice__(self, i, j))
+        """
+        Slicing returns an Events class rather than a list.
 
-    def __mul__(self,other):
-        """ Multiplying returns an Events class rather than a list. """
-        return Events(list.__mul__(self,other))
+        >>> print events[:100]
+        +------------------+------+
+        | Number of events | 100  |
+        |       File       | None |
+        +------------------+------+
+        """
+        return Events(list_=list.__getslice__(self, i, j))
+
+    def __mul__(self, other):
+        """
+        Multiplying returns an Events class rather than a list.
+        >>> print events * 5
+        +------------------+-------+
+        | Number of events | 50000 |
+        |       File       |  None |
+        +------------------+-------+
+        """
+        return Events(list_=list.__mul__(self,other))
+
+    def __rmul__(self, other):
+        """ See __mul__. """
+        return self.__mul__(other)
+
 
 ###############################################################################
 
@@ -562,6 +582,43 @@ class Event(dict):
 
         return combination
 
+    def __mul__(self, other):
+        """
+        Multiplying returns an Event class.
+        >>> print events[0] * 2
+        +----------+--------+-------+--------+-------+------+------+-------+
+        |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+        +----------+--------+-------+--------+-------+------+------+-------+
+        |   jet    | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |   jet    | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |   jet    | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
+        |   jet    | 0.596  | 0.853 | 12.47  |  2.53 | 7.0  | 0.0  |  1.26 |
+        |   jet    | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
+        |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
+        |   jet    | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |   jet    | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |   jet    | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
+        |   jet    | 0.596  | 0.853 | 12.47  |  2.53 | 7.0  | 0.0  |  1.26 |
+        |   jet    | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
+        |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
+        |   MET    |  0.0   | 2.695 | 21.43  |  0.0  | 0.0  | 0.0  |  0.0  |
+        |   MET    |  0.0   | 2.695 | 21.43  |  0.0  | 0.0  | 0.0  |  0.0  |
+        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
+        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
+        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
+        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
+        +----------+--------+-------+--------+-------+------+------+-------+
+        """
+        prod = Event()
+        for key in self.keys():
+            prod[key] = self[key] * other  # Multiply object by object
+
+        return prod
+
+    def __rmul__(self, other):
+        """ See __mul__. """
+        return self.__mul__(other)
+
 ###############################################################################
 
 
@@ -686,12 +743,44 @@ class Objects(list):
         return combination
 
     def __getslice__(self,i,j):
-        """ Slicing returns an Objects class rather than a list. """
+        """
+        Slicing returns an Objects class rather than a list.
+
+        >>> print events[0]["jet"][:2]
+        +--------+--------+-------+--------+-------+------+------+-------+
+        | Object |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+        +--------+--------+-------+--------+-------+------+------+-------+
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        +--------+--------+-------+--------+-------+------+------+-------+
+        """
         return Objects(list.__getslice__(self, i, j))
 
-    def __mul__(self,other):
-        """ Multiplying returns an Objects class rather than a list. """
-        return Objects(list.__mul__(self,other))
+    def __mul__(self, other):
+        """
+        Multiplying returns an Objects class rather than a list.
+
+        >>> print events[0]["jet"][:2] * 5
+        +--------+--------+-------+--------+-------+------+------+-------+
+        | Object |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+        +--------+--------+-------+--------+-------+------+------+-------+
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        +--------+--------+-------+--------+-------+------+------+-------+
+        """
+        return Objects(list.__mul__(self, other))
+
+    def __rmul__(self, other):
+        """ See __mul__. """
+        return self.__mul__(other)
 
 ###############################################################################
 
