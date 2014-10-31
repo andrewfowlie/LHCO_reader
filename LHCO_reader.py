@@ -368,6 +368,14 @@ class Events(list):
 
         plt.show()  # Show the plot on screen
 
+    def __getslice__(self,i,j):
+        """ Slicing returns an Events class rather than a list. """
+        return Events(list.__getslice__(self, i, j))
+
+    def __mul__(self,other):
+        """ Multiplying returns an Events class rather than a list. """
+        return Events(list.__mul__(self,other))
+
 ###############################################################################
 
 
@@ -676,6 +684,14 @@ class Objects(list):
         combination = Objects(list.__add__(self, other))
 
         return combination
+
+    def __getslice__(self,i,j):
+        """ Slicing returns an Objects class rather than a list. """
+        return Objects(list.__getslice__(self, i, j))
+
+    def __mul__(self,other):
+        """ Multiplying returns an Objects class rather than a list. """
+        return Objects(list.__mul__(self,other))
 
 ###############################################################################
 
