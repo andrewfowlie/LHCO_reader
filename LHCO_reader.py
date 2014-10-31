@@ -97,8 +97,7 @@ class Events(list):
     | electron | -2.14 | 1.816 | 16.76 |  0.0  | -1.0 | 0.0  |  0.01 |
     | electron | 1.183 | 4.001 | 15.84 |  0.0  | 1.0  | 0.0  |  0.0  |
     +----------+-------+-------+-------+-------+------+------+-------+
-    >>> events[100]["electron"].order("phi")
-    >>> print events[100]["electron"]
+    >>> print events[100]["electron"].order("phi")
     +----------+-------+-------+-------+-------+------+------+-------+
     |  Object  |  eta  |  phi  |   PT  | jmass | ntrk | btag | hadem |
     +----------+-------+-------+-------+-------+------+------+-------+
@@ -658,6 +657,9 @@ class Objects(list):
 
         Arguments:
         prop -- Property by which to sort objects, e.g. sort by "PT"
+
+        Returns:
+        self - List of objects, now ordered
         """
 
         if not self[0].get(prop):
@@ -667,6 +669,8 @@ class Objects(list):
         # Simply sort the list in reverse order, e.g. if sorted by PT,
         # hardest jet is first
         self.sort(key=lambda obj: obj[prop], reverse=True)
+
+        return self
 
     def __str__(self):
         """
@@ -717,8 +721,7 @@ class Objects(list):
         | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
         | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
         +----------+--------+-------+--------+-------+------+------+-------+
-        >>> events[0]["jet+electron"].order("PT")
-        >>> print events[0]["jet+electron"]
+        >>> print events[0]["jet+electron"].order("PT")
         +----------+--------+-------+--------+-------+------+------+-------+
         |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
         +----------+--------+-------+--------+-------+------+------+-------+
