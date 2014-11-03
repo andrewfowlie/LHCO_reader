@@ -395,6 +395,21 @@ class Events(list):
         return self.__mul__(other)
 
 
+    def lhco(self, f_name):
+        """ Print events in LHCO format to a new file.
+
+        >>> import sys; sys.stderr = open('/dev/null', 'w')
+        >>> events.lhco("test.lhco")
+        >>> test_events = Events("test.lhco")
+
+        Arguments:
+        f_name -- Name of file to be printed to
+        """
+        with open(f_name, 'w+') as f:
+            f.write("# LHCO output from LHCO_reader")
+            for event in self:
+                f.write(event._lhco())
+
 ###############################################################################
 
 
@@ -537,7 +552,6 @@ class Event(dict):
 
             if number is "0":  # "0" events are trigger information, ignore
                 continue
-
             try:
                 # Split line into individual properties
                 values = map(float, words)
@@ -617,6 +631,42 @@ class Event(dict):
     def __rmul__(self, other):
         """ See __mul__. """
         return self.__mul__(other)
+
+    def _lhco(self):
+        """ Make an LHCO format string of event.
+
+        Don't use original string, as event's might have been somehow
+        processed, it might not be up-to-date.
+
+        This attribute is intended to be semi-private - i.e. you are not
+        encouraged to call this function directly.
+
+        Returns:
+        lhco --- Event in LHCO format.
+        """
+
+        # Initialize string to trigger information, we don't
+        # process/write trigger information
+        lhco = "\n" + "0"
+
+        # Make an object containing all objects, electrons, muons etc, so
+        # that we can sort the everything by PT
+        all_objects = Objects()
+        for name in self._names.itervalues():
+            all_objects += self[name]
+        all_objects.order("PT")  # Order all objects by PT
+
+        for ii, obj in enumerate(all_objects):
+            # Number of object, from 1 not 0. Ignore Object property,
+            # which could be wrong if objects were deleted etc
+            lhco += "\n" + str(ii + 1)
+            # Type of object, as an integer
+            lhco += "    " + str(int(obj._column()[1]))
+            # All other properties, as floats
+            for item in obj._column()[2:]:
+                lhco += "    " + str(item)
+
+        return lhco
 
 ###############################################################################
 
@@ -868,6 +918,22 @@ class Object(dict):
             row.append(self[prop])
 
         return row
+
+    def _column(self):
+        """
+        Make a list of event data.
+
+        This attribute is intended to be semi-private - i.e. you are not
+        encouraged to call this function directly.
+
+        Returns:
+        column --- List of event data
+        """
+        column = [] # Initialize empty list for LHCO
+        for prop in self._properties:
+            column.append(self[prop])
+
+        return column
 
     def vector(self):
         """
