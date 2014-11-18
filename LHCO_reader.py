@@ -1056,6 +1056,24 @@ def Fourvector_eta(PT, eta, phi, mass=0.):
 
 ###############################################################################
 
+def delta_R(o1, o2):
+    """
+    Find the angular separation between two objects.
+
+    Arguments:
+    o1 -- An Object, e.g. an electron
+    o2 -- Second Object, e.g. jet
+
+    Returns:
+    delta_R -- Angular separation between objects
+
+    """
+    delta_R = ((o1["eta"] - o2["eta"])**2 + (o1["phi"] - o2["phi"])**2)**0.5
+
+    return delta_R
+
+###############################################################################
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod(extraglobs={'events': Events("example.lhco")})
