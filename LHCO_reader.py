@@ -395,21 +395,6 @@ class Events(list):
         return self.__mul__(other)
 
 
-    def lhco(self, f_name):
-        """ Print events in LHCO format to a new file.
-
-        >>> import sys; sys.stderr = open('/dev/null', 'w')
-        >>> events.lhco("test.lhco")
-        >>> test_events = Events("test.lhco")
-
-        Arguments:
-        f_name -- Name of file to be printed to
-        """
-        with open(f_name, 'w+') as f:
-            f.write("# LHCO output from LHCO_reader")
-            for event in self:
-                f.write(event._lhco())
-
 ###############################################################################
 
 
@@ -552,6 +537,7 @@ class Event(dict):
 
             if number is "0":  # "0" events are trigger information, ignore
                 continue
+
             try:
                 # Split line into individual properties
                 values = map(float, words)
@@ -631,42 +617,6 @@ class Event(dict):
     def __rmul__(self, other):
         """ See __mul__. """
         return self.__mul__(other)
-
-    def _lhco(self):
-        """ Make an LHCO format string of event.
-
-        Don't use original string, as event's might have been somehow
-        processed, it might not be up-to-date.
-
-        This attribute is intended to be semi-private - i.e. you are not
-        encouraged to call this function directly.
-
-        Returns:
-        lhco --- Event in LHCO format.
-        """
-
-        # Initialize string to trigger information, we don't
-        # process/write trigger information
-        lhco = "\n" + "0"
-
-        # Make an object containing all objects, electrons, muons etc, so
-        # that we can sort the everything by PT
-        all_objects = Objects()
-        for name in self._names.itervalues():
-            all_objects += self[name]
-        all_objects.order("PT")  # Order all objects by PT
-
-        for ii, obj in enumerate(all_objects):
-            # Number of object, from 1 not 0. Ignore Object property,
-            # which could be wrong if objects were deleted etc
-            lhco += "\n" + str(ii + 1)
-            # Type of object, as an integer
-            lhco += "    " + str(int(obj._column()[1]))
-            # All other properties, as floats
-            for item in obj._column()[2:]:
-                lhco += "    " + str(item)
-
-        return lhco
 
 ###############################################################################
 
@@ -919,22 +869,6 @@ class Object(dict):
 
         return row
 
-    def _column(self):
-        """
-        Make a list of event data.
-
-        This attribute is intended to be semi-private - i.e. you are not
-        encouraged to call this function directly.
-
-        Returns:
-        column --- List of event data
-        """
-        column = [] # Initialize empty list for LHCO
-        for prop in self._properties:
-            column.append(self[prop])
-
-        return column
-
     def vector(self):
         """
         Make a four-momentum vector for this Object.
@@ -957,7 +891,7 @@ class Object(dict):
         | 15.4308063482 | 5.40302305868 | 8.41470984808 | 11.7520119364 |
         +---------------+---------------+---------------+---------------+
         """
-        return Fourvector_eta(self["PT"], self["eta"], self["phi"])
+        return Fourvector_eta(self["PT"], self["eta"], self["phi"], mass=self["jmass"])
 
 ###############################################################################
 
@@ -1092,17 +1026,17 @@ class Fourvector:
 ###############################################################################
 
 
-def Fourvector_eta(PT, eta, phi):
+def Fourvector_eta(PT, eta, phi, mass=0.):
     """
     Builds a four-vector from p, eta, phi co-ordinates.
 
-    Convention is that z-direction is the beam line. We assume particle
-    is massless.
+    Convention is that z-direction is the beam line.
 
     Arguments:
     PT -- transverse momentum
     eta -- pseudo-rapidity, -ln[tan(theta/2)], with theta angle to beam axis
     phi -- azimuthal angle, angle around beam
+    mass -- mass of particle
 
     Returns:
     Fourvector -- Four-vector object
@@ -1110,7 +1044,8 @@ def Fourvector_eta(PT, eta, phi):
 
     theta = 2. * np.arctan(np.exp(-eta))
     p = PT / sin(theta)
-    v = np.array([p,
+    E = (p**2 + mass**2)**0.5
+    v = np.array([E,
                   p * sin(theta) * cos(phi),
                   p * sin(theta) * sin(phi),
                   p * cos(theta)
