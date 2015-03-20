@@ -62,6 +62,7 @@ from numpy import cos, sin
 import warnings
 import matplotlib.pyplot as plt
 from collections import OrderedDict
+from inspect import getframeinfo, stack
 
 ###############################################################################
 
@@ -71,6 +72,7 @@ from collections import OrderedDict
 
 
 class Events(list):
+
     """
     All events in LHCO file as a list of "Event" objects.
 
@@ -116,6 +118,7 @@ class Events(list):
     Each list entry is itself an Event class - a class designed to store
     a single event.
     """
+
     def __init__(self, f_name=None, list_=None):
         """
         Parse an LHCO file into a list of Event objects.
@@ -141,7 +144,8 @@ class Events(list):
             if not len(self):  # Check whether any events were parsed
                 warnings.warn("No events were parsed")
             elif not self.__exp_number():  # Check number of parsed events
-                warnings.warn("Couldn't read total number of events from LHCO file")
+                warnings.warn(
+                    "Couldn't read total number of events from LHCO file")
             elif not self.__exp_number() == len(self):
                 warnings.warn("Events were not parsed")
 
@@ -357,7 +361,8 @@ class Events(list):
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.hist(data, 50, normed=1, facecolor='Crimson', alpha=0.9)  # Plot data
+        # Plot data
+        ax.hist(data, 50, normed=1, facecolor='Crimson', alpha=0.9)
         ax.grid()  # Add grid lines
 
         ax.set_title(key)  # Titles etc
@@ -367,7 +372,7 @@ class Events(list):
 
         plt.show()  # Show the plot on screen
 
-    def __getslice__(self,i,j):
+    def __getslice__(self, i, j):
         """
         Slicing returns an Events class rather than a list.
 
@@ -388,7 +393,7 @@ class Events(list):
         |       File       |  None |
         +------------------+-------+
         """
-        return Events(list_=list.__mul__(self,other))
+        return Events(list_=list.__mul__(self, other))
 
     def __rmul__(self, other):
         """ See __mul__. """
@@ -399,6 +404,7 @@ class Events(list):
 
 
 class Event(dict):
+
     """
     A single LHCO event.
 
@@ -423,6 +429,7 @@ class Event(dict):
     +--------+-----+-----+----+-------+------+------+-------+
     +--------+-----+-----+----+-------+------+------+-------+
     """
+
     def __init__(self, lines=None, dictionary=None):
         """
         Parse a string from an LHCO file into a single event.
@@ -454,12 +461,14 @@ class Event(dict):
             self.__parse()  # Parse the event
             # Check whether agrees with LHCO file
             if self.__count_number() != sum(self.number().values()):
-                warnings.warn("Inconsistent numbers of objects in event:\n" + str(self))
+                warnings.warn(
+                    "Inconsistent numbers of objects in event:\n" + str(self))
         else:
             warnings.warn("Adding empty event")
 
         if dictionary:
-            dict.__init__(self, dictionary)  # Ordinary dictionary initialization
+            # Ordinary dictionary initialization
+            dict.__init__(self, dictionary)
 
     def __str__(self):
         """
@@ -471,7 +480,8 @@ class Event(dict):
         table = pt(headings)
 
         # Add rows to the table
-        for objects in self.itervalues():  # Iterate object types, e.g. electrons
+        # Iterate object types, e.g. electrons
+        for objects in self.itervalues():
             for obj in objects:  # Iterate all objects of that type
                 table.add_row(obj._row())
 
@@ -502,7 +512,6 @@ class Event(dict):
         """
         return int(self.__lines[-1].split()[0])
 
-
     def add_object(self, name, dictionary=None):
         """
         Add an object to the event. Append a list element of Object class.
@@ -526,7 +535,7 @@ class Event(dict):
         this class itself.
         """
 
-        properties = Object()._properties # Expected properties of object
+        properties = Object()._properties  # Expected properties of object
         number_properties = len(properties)
         names = self._names
 
@@ -622,9 +631,11 @@ class Event(dict):
 
 
 class PrintDict(OrderedDict):
+
     """
     An ordinary dictionary with a nice printing function.
     """
+
     def __str__(self):
         """
         String the dictionary to an easy to read table.
@@ -640,6 +651,7 @@ class PrintDict(OrderedDict):
 
 
 class Objects(list):
+
     """
     Objects in an LHCO event of a particular type.
 
@@ -745,7 +757,7 @@ class Objects(list):
 
         return combination
 
-    def __getslice__(self,i,j):
+    def __getslice__(self, i, j):
         """
         Slicing returns an Objects class rather than a list.
 
@@ -789,6 +801,7 @@ class Objects(list):
 
 
 class Object(dict):
+
     """
     A single object in an LHCO event, e.g. a single electron.
 
@@ -804,6 +817,7 @@ class Object(dict):
     - btag
     - hadem
     """
+
     def __init__(self, name=None, dictionary=None):
         """
         Initalize a single object, e.g. a single electron.
@@ -814,7 +828,8 @@ class Object(dict):
         """
 
         if dictionary:
-            dict.__init__(self, dictionary)  # Ordinary dictionary initialization
+            # Ordinary dictionary initialization
+            dict.__init__(self, dictionary)
         self.name = name  # Save name of object
 
         # List of object properties in LHCO file, these are row headings in
@@ -884,6 +899,7 @@ class Object(dict):
         >>> electron["PT"] = 10
         >>> electron["eta"] = 1
         >>> electron["phi"] = 1
+        >>> electron["jmass"] = 0
         >>> print electron.vector()
         +---------------+---------------+---------------+---------------+
         |       E       |      P_x      |      P_y      |      P_z      |
@@ -891,14 +907,18 @@ class Object(dict):
         | 15.4308063482 | 5.40302305868 | 8.41470984808 | 11.7520119364 |
         +---------------+---------------+---------------+---------------+
         """
-        return Fourvector_eta(self["PT"], self["eta"], self["phi"], mass=self["jmass"])
+        return Fourvector_eta(
+            self["PT"], self["eta"], self["phi"], mass=self["jmass"])
 
 ###############################################################################
 
 
-class Fourvector:
+class Fourvector(np.ndarray):
+
     """
     A four-vector, with relevant addition, multiplication etc. operations.
+
+    We subclass numpy ndarray.
 
     Builds a four-vector from Cartesian co-ordinates. Defines Minkowski
     product, square, additon of four-vectors.
@@ -912,7 +932,8 @@ class Fourvector:
     | 1 |  1  |  1  |  1  |
     +---+-----+-----+-----+
     """
-    def __init__(self, v=None):
+
+    def __new__(self, v=None):
         """ Four-vector from Cartesian co-ordinates.
 
         Arguments:
@@ -920,38 +941,12 @@ class Fourvector:
         """
         if v is None:
             v = np.zeros(4)  # Default is empty four-vector
-        self.v = v  # Save vector
+
         self.metric = np.diag([1, -1, -1, -1])  # Define metric
 
-    def __add__(self, other):
-        """
-        Add four-vectors.
+        obj = np.asarray(v).view(self)  # Subclass array
 
-        >>> x = np.array([1,1,1,1])
-        >>> p = Fourvector(x)
-        >>> print p+p
-        +---+-----+-----+-----+
-        | E | P_x | P_y | P_z |
-        +---+-----+-----+-----+
-        | 2 |  2  |  2  |  2  |
-        +---+-----+-----+-----+
-        """
-        return Fourvector(self.v + other.v)
-
-    def __sub__(self, other):
-        """
-        Subtract four-vectors.
-
-        >>> x = np.array([1,1,1,1])
-        >>> p = Fourvector(x)
-        >>> print p-p
-        +---+-----+-----+-----+
-        | E | P_x | P_y | P_z |
-        +---+-----+-----+-----+
-        | 0 |  0  |  0  |  0  |
-        +---+-----+-----+-----+
-        """
-        return Fourvector(self.v - other.v)
+        return obj
 
     def __mul__(self, other):
         """
@@ -971,11 +966,11 @@ class Fourvector:
             prod = 0.
             for ii in range(4):
                 for jj in range(4):
-                    prod += self.v[ii] * other.v[jj] * self.metric[ii, jj]
+                    prod += self[ii] * other[jj] * self.metric[ii, jj]
             return prod
         # A four-vector multiplied by a number
         elif isinstance(other, float) or isinstance(other, int):
-            prod = other * self.v
+            prod = other * self
             return Fourvector(prod)
 
         else:
@@ -1006,7 +1001,7 @@ class Fourvector:
 
         headings = ["E", "P_x", "P_y", "P_z"]
         table = pt(headings)
-        table.add_row(self.v.tolist())
+        table.add_row(self.tolist())
 
         return str(table)
 
@@ -1021,7 +1016,7 @@ class Fourvector:
         >>> print abs(p)
         4.69041575982
         """
-        return self.__mul__(self)**0.5
+        return self.__mul__(self) ** 0.5
 
 ###############################################################################
 
@@ -1044,7 +1039,7 @@ def Fourvector_eta(PT, eta, phi, mass=0.):
 
     theta = 2. * np.arctan(np.exp(-eta))
     p = PT / sin(theta)
-    E = (p**2 + mass**2)**0.5
+    E = (p ** 2 + mass ** 2) ** 0.5
     v = np.array([E,
                   p * sin(theta) * cos(phi),
                   p * sin(theta) * sin(phi),
@@ -1056,21 +1051,25 @@ def Fourvector_eta(PT, eta, phi, mass=0.):
 
 ###############################################################################
 
-def delta_R(o1, o2):
-    """
-    Find the angular separation between two objects.
 
-    Arguments:
-    o1 -- An Object, e.g. an electron
-    o2 -- Second Object, e.g. jet
-
-    Returns:
-    delta_R -- Angular separation between objects
+class Reject(PrintDict):
 
     """
-    delta_R = ((o1["eta"] - o2["eta"])**2 + (o1["phi"] - o2["phi"])**2)**0.5
+    Dictionary containing reasons for rejecting events.
+    """
 
-    return delta_R
+    def reject(self, reason):
+        """
+        Reject an event for a particular reason, and record number of events rejected for that reason.
+
+        Arguments:
+        reason -- String, giving reason for rejection
+        """
+
+        if self.get(reason):
+            self[reason] += 1
+        else:
+            self[reason] = 1
 
 ###############################################################################
 
