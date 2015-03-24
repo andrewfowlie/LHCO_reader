@@ -501,6 +501,26 @@ class Event(dict):
 
         return number
 
+    def HT(self):
+        """
+        Returns the scalar sum of the transverse momenta of the particles
+        in the event.
+
+        >>> print events[111]
+        +----------+--------+-------+-------+-------+------+------+-------+
+        |  Object  |  eta   |  phi  |   PT  | jmass | ntrk | btag | hadem |
+        +----------+--------+-------+-------+-------+------+------+-------+
+        |   jet    | -1.424 | 5.174 | 31.38 |  2.81 | 4.1  | 0.0  |  2.08 |
+        |   MET    |  0.0   | 5.384 |  6.1  |  0.0  | 0.0  | 0.0  |  0.0  |
+        | electron | -0.714 | 5.862 | 15.73 |  0.0  | -1.0 | 0.0  |  0.01 |
+        | electron | 1.432  | 2.279 | 49.11 |  0.0  | 1.0  | 0.0  |  0.01 |
+        +----------+--------+-------+-------+-------+------+------+-------+
+        >>> events[111].HT()
+        96.22
+        """
+        return sum([obj['PT'] for sub_list in self.values() for
+                                    obj in sub_list if obj['type']!=6.0])
+
     def __count_number(self):
         """
         Return number of objects in the event - according to LHCO file, first
