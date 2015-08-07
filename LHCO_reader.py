@@ -63,6 +63,8 @@ import warnings
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from math import pi
+import inspect
+import copy
 
 ###############################################################################
 
@@ -117,7 +119,7 @@ class Events(list):
     Each list entry is itself an Event class - a class designed to store
     a single event.
     """
-    def __init__(self, f_name=None, list_=None):
+    def __init__(self, f_name=None, list_=None, cut_list=None):
         """
         Parse an LHCO file into a list of Event objects.
 
@@ -127,11 +129,17 @@ class Events(list):
         Arguments:
         f_name -- Name of an LHCO file, including path
         list_ -- A list for initalizing Events
+        cut_list -- Cuts applied to events and their acceptance
         """
 
         if list_:
             list.__init__(self, list_)  # Ordinary list initialization
         self.f_name = f_name  # Save file name
+       
+        if cut_list:
+            self.cut_list = cut_list  # Save cuts
+        else:
+            self.cut_list = []
 
         if not self.f_name:
             warnings.warn("Events class without LHCO file")
@@ -289,6 +297,9 @@ class Events(list):
         table = pt(header=False)
         table.add_row(["Number of events", len(self)])
         table.add_row(["File", self.f_name])
+        for cut, acceptance in self.cut_list:
+            cut_string = inspect.getsource(cut).strip()
+            table.add_row([cut_string, str(acceptance)])
 
         return table.get_string()
 
@@ -299,6 +310,33 @@ class Events(list):
         Representation of such a big list is anyway unreadable.
         """
         return self.__str__()
+
+    def cut(self, cut):
+        """
+        Apply a cut.
+        
+        Arguments:
+        cut -- Cut to apply to events
+        
+        >>> events = Events("example.lhco")
+        >>> tau = lambda event: event.number()["tau"] == 1
+        >>> events.cut(tau)
+        >>> print events
+        +------------------------------------------------+--------------+
+        |                Number of events                |     8656     |
+        |                      File                      | example.lhco |
+        | tau = lambda event: event.number()["tau"] == 1 |    0.8656    |
+        +------------------------------------------------+--------------+
+        """
+        
+        self_org = copy.deepcopy(self)
+        for event in self_org:
+            if cut(event):
+                self.remove(event)
+       
+        # Append information about the cut to events
+        acceptance = float(len(self)) / float(len(self_org))
+        self.cut_list.append([cut, acceptance])
 
     def column(self, key, prop):
         """
@@ -480,10 +518,17 @@ class Event(dict):
 
     def number(self):
         """
-        Count objects of each type, e.g. electron, and check for consistency.
+        Count objects of each type, e.g. electron.
 
         Returns:
         number -- A dictionary of the numbers of objects of each type
+        
+        >>> print Event().number()
+        +-----+-----+------+--------+-----+----------+
+        | tau | jet | muon | photon | MET | electron |
+        +-----+-----+------+--------+-----+----------+
+        |  0  |  0  |  0   |   0    |  0  |    0     |
+        +-----+-----+------+--------+-----+----------+
         """
 
         # Record number of objects in an event and keep total
@@ -1028,7 +1073,13 @@ class Fourvector(np.ndarray):
         return phi
 
     def PT(self):
-        """ Return PT - transverse magnitude of vector. """
+        """ 
+        Return PT - transverse magnitude of vector. 
+        >>> x = [5,1,1,1]
+        >>> p = Fourvector(x)
+        >>> print p.PT()
+        1.41421356237
+        """
         return (self[1]**2 + self[2]**2)**0.5
 
     def theta(self):
@@ -1191,7 +1242,9 @@ def delta_R(o1, o2):
 
     Returns:
     delta_R -- Angular separation between objects
-
+    
+    >>> print delta_R(events[0]["jet"][1], events[0]["jet"][2])
+    4.80541371788
     """
     delta_R = ((o1["eta"] - o2["eta"])**2 + (o1["phi"] - o2["phi"])**2)**0.5
 
