@@ -62,6 +62,7 @@ from numpy import cos, sin
 import warnings
 import matplotlib.pyplot as plt
 from collections import OrderedDict
+from math import pi
 
 ###############################################################################
 
@@ -71,7 +72,6 @@ from collections import OrderedDict
 
 
 class Events(list):
-
     """
     All events in LHCO file as a list of "Event" objects.
 
@@ -117,7 +117,6 @@ class Events(list):
     Each list entry is itself an Event class - a class designed to store
     a single event.
     """
-
     def __init__(self, f_name=None, list_=None):
         """
         Parse an LHCO file into a list of Event objects.
@@ -143,8 +142,7 @@ class Events(list):
             if not len(self):  # Check whether any events were parsed
                 warnings.warn("No events were parsed")
             elif not self.__exp_number():  # Check number of parsed events
-                warnings.warn(
-                    "Couldn't read total number of events from LHCO file")
+                warnings.warn("Couldn't read total number of events from LHCO file")
             elif not self.__exp_number() == len(self):
                 warnings.warn("Events were not parsed")
 
@@ -360,8 +358,7 @@ class Events(list):
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        # Plot data
-        ax.hist(data, 50, normed=1, facecolor='Crimson', alpha=0.9)
+        ax.hist(data, 50, normed=1, facecolor='Crimson', alpha=0.9)  # Plot data
         ax.grid()  # Add grid lines
 
         ax.set_title(key)  # Titles etc
@@ -371,7 +368,7 @@ class Events(list):
 
         plt.show()  # Show the plot on screen
 
-    def __getslice__(self, i, j):
+    def __getslice__(self,i,j):
         """
         Slicing returns an Events class rather than a list.
 
@@ -392,7 +389,7 @@ class Events(list):
         |       File       |  None |
         +------------------+-------+
         """
-        return Events(list_=list.__mul__(self, other))
+        return Events(list_=list.__mul__(self,other))
 
     def __rmul__(self, other):
         """ See __mul__. """
@@ -403,7 +400,6 @@ class Events(list):
 
 
 class Event(dict):
-
     """
     A single LHCO event.
 
@@ -428,7 +424,6 @@ class Event(dict):
     +--------+-----+-----+----+-------+------+------+-------+
     +--------+-----+-----+----+-------+------+------+-------+
     """
-
     def __init__(self, lines=None, dictionary=None):
         """
         Parse a string from an LHCO file into a single event.
@@ -460,14 +455,12 @@ class Event(dict):
             self.__parse()  # Parse the event
             # Check whether agrees with LHCO file
             if self.__count_number() != sum(self.number().values()):
-                warnings.warn(
-                    "Inconsistent numbers of objects in event:\n" + str(self))
+                warnings.warn("Inconsistent numbers of objects in event:\n" + str(self))
         else:
             warnings.warn("Adding empty event")
 
         if dictionary:
-            # Ordinary dictionary initialization
-            dict.__init__(self, dictionary)
+            dict.__init__(self, dictionary)  # Ordinary dictionary initialization
 
     def __str__(self):
         """
@@ -479,8 +472,7 @@ class Event(dict):
         table = pt(headings)
 
         # Add rows to the table
-        # Iterate object types, e.g. electrons
-        for objects in self.itervalues():
+        for objects in self.itervalues():  # Iterate object types, e.g. electrons
             for obj in objects:  # Iterate all objects of that type
                 table.add_row(obj._row())
 
@@ -501,26 +493,6 @@ class Event(dict):
 
         return number
 
-    def HT(self):
-        """
-        Returns the scalar sum of the transverse momenta of the particles
-        in the event.
-
-        >>> print events[111]
-        +----------+--------+-------+-------+-------+------+------+-------+
-        |  Object  |  eta   |  phi  |   PT  | jmass | ntrk | btag | hadem |
-        +----------+--------+-------+-------+-------+------+------+-------+
-        |   jet    | -1.424 | 5.174 | 31.38 |  2.81 | 4.1  | 0.0  |  2.08 |
-        |   MET    |  0.0   | 5.384 |  6.1  |  0.0  | 0.0  | 0.0  |  0.0  |
-        | electron | -0.714 | 5.862 | 15.73 |  0.0  | -1.0 | 0.0  |  0.01 |
-        | electron | 1.432  | 2.279 | 49.11 |  0.0  | 1.0  | 0.0  |  0.01 |
-        +----------+--------+-------+-------+-------+------+------+-------+
-        >>> events[111].HT()
-        96.22
-        """
-        return sum([obj['PT'] for sub_list in self.values() for
-                                    obj in sub_list if obj['type']!=6.0])
-
     def __count_number(self):
         """
         Return number of objects in the event - according to LHCO file, first
@@ -530,6 +502,7 @@ class Event(dict):
         number (int) -- Number of events in objects in the event.
         """
         return int(self.__lines[-1].split()[0])
+
 
     def add_object(self, name, dictionary=None):
         """
@@ -554,7 +527,7 @@ class Event(dict):
         this class itself.
         """
 
-        properties = Object()._properties  # Expected properties of object
+        properties = Object()._properties # Expected properties of object
         number_properties = len(properties)
         names = self._names
 
@@ -650,11 +623,9 @@ class Event(dict):
 
 
 class PrintDict(OrderedDict):
-
     """
     An ordinary dictionary with a nice printing function.
     """
-
     def __str__(self):
         """
         String the dictionary to an easy to read table.
@@ -670,7 +641,6 @@ class PrintDict(OrderedDict):
 
 
 class Objects(list):
-
     """
     Objects in an LHCO event of a particular type.
 
@@ -776,7 +746,7 @@ class Objects(list):
 
         return combination
 
-    def __getslice__(self, i, j):
+    def __getslice__(self,i,j):
         """
         Slicing returns an Objects class rather than a list.
 
@@ -820,7 +790,6 @@ class Objects(list):
 
 
 class Object(dict):
-
     """
     A single object in an LHCO event, e.g. a single electron.
 
@@ -836,7 +805,6 @@ class Object(dict):
     - btag
     - hadem
     """
-
     def __init__(self, name=None, dictionary=None):
         """
         Initalize a single object, e.g. a single electron.
@@ -847,8 +815,7 @@ class Object(dict):
         """
 
         if dictionary:
-            # Ordinary dictionary initialization
-            dict.__init__(self, dictionary)
+            dict.__init__(self, dictionary)  # Ordinary dictionary initialization
         self.name = name  # Save name of object
 
         # List of object properties in LHCO file, these are row headings in
@@ -918,7 +885,7 @@ class Object(dict):
         >>> electron["PT"] = 10
         >>> electron["eta"] = 1
         >>> electron["phi"] = 1
-        >>> electron["jmass"] = 0
+        >>> electron["jmass"] = 0.
         >>> print electron.vector()
         +---------------+---------------+---------------+---------------+
         |       E       |      P_x      |      P_y      |      P_z      |
@@ -926,18 +893,14 @@ class Object(dict):
         | 15.4308063482 | 5.40302305868 | 8.41470984808 | 11.7520119364 |
         +---------------+---------------+---------------+---------------+
         """
-        return Fourvector_eta(
-            self["PT"], self["eta"], self["phi"], mass=self["jmass"])
+        return Fourvector_eta(self["PT"], self["eta"], self["phi"], mass=self["jmass"])
 
 ###############################################################################
 
 
-class Fourvector(np.ndarray):
-
+class Fourvector:
     """
     A four-vector, with relevant addition, multiplication etc. operations.
-
-    We subclass numpy ndarray.
 
     Builds a four-vector from Cartesian co-ordinates. Defines Minkowski
     product, square, additon of four-vectors.
@@ -951,8 +914,7 @@ class Fourvector(np.ndarray):
     | 1 |  1  |  1  |  1  |
     +---+-----+-----+-----+
     """
-
-    def __new__(self, v=None):
+    def __init__(self, v=None):
         """ Four-vector from Cartesian co-ordinates.
 
         Arguments:
@@ -960,12 +922,38 @@ class Fourvector(np.ndarray):
         """
         if v is None:
             v = np.zeros(4)  # Default is empty four-vector
-
+        self.v = v  # Save vector
         self.metric = np.diag([1, -1, -1, -1])  # Define metric
 
-        obj = np.asarray(v).view(self)  # Subclass array
+    def __add__(self, other):
+        """
+        Add four-vectors.
 
-        return obj
+        >>> x = np.array([1,1,1,1])
+        >>> p = Fourvector(x)
+        >>> print p+p
+        +---+-----+-----+-----+
+        | E | P_x | P_y | P_z |
+        +---+-----+-----+-----+
+        | 2 |  2  |  2  |  2  |
+        +---+-----+-----+-----+
+        """
+        return Fourvector(self.v + other.v)
+
+    def __sub__(self, other):
+        """
+        Subtract four-vectors.
+
+        >>> x = np.array([1,1,1,1])
+        >>> p = Fourvector(x)
+        >>> print p-p
+        +---+-----+-----+-----+
+        | E | P_x | P_y | P_z |
+        +---+-----+-----+-----+
+        | 0 |  0  |  0  |  0  |
+        +---+-----+-----+-----+
+        """
+        return Fourvector(self.v - other.v)
 
     def __mul__(self, other):
         """
@@ -985,11 +973,11 @@ class Fourvector(np.ndarray):
             prod = 0.
             for ii in range(4):
                 for jj in range(4):
-                    prod += self[ii] * other[jj] * self.metric[ii, jj]
+                    prod += self.v[ii] * other.v[jj] * self.metric[ii, jj]
             return prod
         # A four-vector multiplied by a number
         elif isinstance(other, float) or isinstance(other, int):
-            prod = other * self
+            prod = other * self.v
             return Fourvector(prod)
 
         else:
@@ -1020,7 +1008,7 @@ class Fourvector(np.ndarray):
 
         headings = ["E", "P_x", "P_y", "P_z"]
         table = pt(headings)
-        table.add_row(self.tolist())
+        table.add_row(self.v.tolist())
 
         return str(table)
 
@@ -1035,7 +1023,112 @@ class Fourvector(np.ndarray):
         >>> print abs(p)
         4.69041575982
         """
-        return self.__mul__(self) ** 0.5
+        return self.__mul__(self)**0.5
+
+    def phi(self):
+        """
+        Find angle phi around beam line.
+
+        >>> x = np.array([5,1,1,1])
+        >>> p = Fourvector(x)
+        >>> print p.phi()
+        0.785398163397
+        """
+        tan_phi = self.v[2] / self.v[1]
+        phi = np.arctan(tan_phi)
+        return phi
+
+    def PT(self):
+        """ Return PT - transverse magnitude of vector. """
+        return (self.v[1]**2 + self.v[2]**2)**0.5
+
+    def theta(self):
+        """
+        Find angle theta between vector and beam line.
+
+        >>> x = np.array([5,1,1,1])
+        >>> p = Fourvector(x)
+        >>> print p.theta()
+        0.955316618125
+        """
+        r = self.PT()
+        z = self.v[3]
+        tan_theta = r / z
+        theta = np.arctan(tan_theta)
+        if z < 0:
+          theta += pi
+        return theta
+
+    def eta(self):
+        """
+        Find pseudo-rapidity.
+
+        >>> x = np.array([5,1,1,1])
+        >>> p = Fourvector(x)
+        >>> print p.eta()
+        0.658478948462
+        """
+        theta = self.theta()
+        eta = -np.log(np.tan(theta/2.))
+        return eta
+
+    def boost(self, beta):
+        """
+        Boost four-vector into a new refrence-frame.
+
+        Arguments:
+        beta -- Numpy array of beta for boost (b1, b2, b3)
+
+        Returns:
+        boosted -- Fourvector class, self but boosted by beta
+
+        >>> x = np.array([5,1,1,1])
+        >>> p = Fourvector(x)
+        >>> beta = p.beta_rest()
+        >>> print p.boost(beta)
+        +---------------+--------------------+--------------------+--------------------+
+        |       E       |        P_x         |        P_y         |        P_z         |
+        +---------------+--------------------+--------------------+--------------------+
+        | 4.69041575982 | -6.73072708679e-16 | -6.69603261727e-16 | -6.66133814775e-16 |
+        +---------------+--------------------+--------------------+--------------------+
+        """
+
+        # Make boost matrix
+        beta_norm = np.linalg.norm(beta)
+        gamma = (1. - beta_norm**2)**-0.5
+        beta_matrix = np.identity(3) + np.outer(beta, beta) * (gamma - 1.) / beta_norm**2
+
+        row = np.array([gamma, -gamma * beta[0], -gamma * beta[1], -gamma * beta[2]])
+        col = np.array([-gamma * beta[0], -gamma * beta[1], -gamma * beta[2]])
+        lambda_ = np.column_stack([col, beta_matrix])
+        lambda_ = np.row_stack([row, lambda_])
+
+        # Apply boost
+        unprimed = np.array(self.v)
+        primed = lambda_.dot(unprimed)
+
+        return Fourvector(primed)
+
+    def beta_rest(self):
+        """
+        Find beta for Lorentz boost such that this four-vector is at rest.
+
+        Returns:
+        beta -- Array of beta (b1, b2, b3)
+
+        >>> x = np.array([5,1,1,1])
+        >>> p = Fourvector(x)
+        >>> print p.beta_rest()
+        [ 0.2  0.2  0.2]
+
+        """
+        gamma = self.v[0] / abs(self)
+        beta_norm = (1. - gamma**-2)**0.5
+        direction = np.array(self.v[1:4])
+        direction = direction / np.linalg.norm(direction)
+        beta = direction * beta_norm
+
+        return beta
 
 ###############################################################################
 
@@ -1054,11 +1147,25 @@ def Fourvector_eta(PT, eta, phi, mass=0.):
 
     Returns:
     Fourvector -- Four-vector object
+
+    >>> eta = 1.
+    >>> phi = 1.
+    >>> PT = 10.
+    >>> mass = 1.
+    >>> p = Fourvector_eta(PT, eta, phi, mass=mass)
+    >>> print p
+    +---------------+---------------+---------------+---------------+
+    |       E       |      P_x      |      P_y      |      P_z      |
+    +---------------+---------------+---------------+---------------+
+    | 15.4631751123 | 5.40302305868 | 8.41470984808 | 11.7520119364 |
+    +---------------+---------------+---------------+---------------+
+    >>> print p.eta(), p.phi(), p.PT(), abs(p)
+    1.0 1.0 10.0 1.0
     """
 
     theta = 2. * np.arctan(np.exp(-eta))
     p = PT / sin(theta)
-    E = (p ** 2 + mass ** 2) ** 0.5
+    E = (p**2 + mass**2)**0.5
     v = np.array([E,
                   p * sin(theta) * cos(phi),
                   p * sin(theta) * sin(phi),
@@ -1085,27 +1192,6 @@ def delta_R(o1, o2):
     delta_R = ((o1["eta"] - o2["eta"])**2 + (o1["phi"] - o2["phi"])**2)**0.5
 
     return delta_R
-
-###############################################################################
-
-class Reject(PrintDict):
-
-    """
-    Dictionary containing reasons for rejecting events.
-    """
-
-    def reject(self, reason):
-        """
-        Reject an event for a particular reason, and record number of events rejected for that reason.
-
-        Arguments:
-        reason -- String, giving reason for rejection
-        """
-
-        if self.get(reason):
-            self[reason] += 1
-        else:
-            self[reason] = 1
 
 ###############################################################################
 
