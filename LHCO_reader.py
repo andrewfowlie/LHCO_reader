@@ -898,14 +898,14 @@ class Object(dict):
 ###############################################################################
 
 
-class Fourvector:
+class Fourvector(np.ndarray):
     """
     A four-vector, with relevant addition, multiplication etc. operations.
 
     Builds a four-vector from Cartesian co-ordinates. Defines Minkowski
     product, square, additon of four-vectors.
 
-    >>> x = np.array([1,1,1,1])
+    >>> x = [1,1,1,1]
     >>> p = Fourvector(x)
     >>> print p
     +---+-----+-----+-----+
@@ -913,47 +913,30 @@ class Fourvector:
     +---+-----+-----+-----+
     | 1 |  1  |  1  |  1  |
     +---+-----+-----+-----+
+    >>> print 2 * p - p
+    +---+-----+-----+-----+
+    | E | P_x | P_y | P_z |
+    +---+-----+-----+-----+
+    | 1 |  1  |  1  |  1  |
+    +---+-----+-----+-----+
     """
+    def __new__(self, v=None):
+        """ Four-vector from Cartesian co-ordinates.
+
+        Arguments:
+        v -- Length 4 list of four-vector in Cartesian co-ordinates
+        """
+        if v is None:
+            v = [0] * 4  # Default is empty four-vector
+        return np.asarray(v).view(self)
+        
     def __init__(self, v=None):
         """ Four-vector from Cartesian co-ordinates.
 
         Arguments:
-        v -- Length 4 Numpy array of four-vector in Cartesian co-ordinates
-        """
-        if v is None:
-            v = np.zeros(4)  # Default is empty four-vector
-        self.v = v  # Save vector
+        v -- Length 4 list of four-vector in Cartesian co-ordinates
+        """      
         self.metric = np.diag([1, -1, -1, -1])  # Define metric
-
-    def __add__(self, other):
-        """
-        Add four-vectors.
-
-        >>> x = np.array([1,1,1,1])
-        >>> p = Fourvector(x)
-        >>> print p+p
-        +---+-----+-----+-----+
-        | E | P_x | P_y | P_z |
-        +---+-----+-----+-----+
-        | 2 |  2  |  2  |  2  |
-        +---+-----+-----+-----+
-        """
-        return Fourvector(self.v + other.v)
-
-    def __sub__(self, other):
-        """
-        Subtract four-vectors.
-
-        >>> x = np.array([1,1,1,1])
-        >>> p = Fourvector(x)
-        >>> print p-p
-        +---+-----+-----+-----+
-        | E | P_x | P_y | P_z |
-        +---+-----+-----+-----+
-        | 0 |  0  |  0  |  0  |
-        +---+-----+-----+-----+
-        """
-        return Fourvector(self.v - other.v)
 
     def __mul__(self, other):
         """
@@ -962,22 +945,22 @@ class Fourvector:
         If one entry is in fact a float or an integer, regular multiplication,
         returning a new four-vector.
 
-        >>> x = np.array([1,1,1,1])
+        >>> x = [1,1,1,1]
         >>> p = Fourvector(x)
         >>> print p*p
         -2.0
         """
 
-        # Four-vector multiplication, Minkowksi product
+        # Four-vector multiplication i.e. Minkowksi product
         if isinstance(other, Fourvector):
             prod = 0.
             for ii in range(4):
                 for jj in range(4):
-                    prod += self.v[ii] * other.v[jj] * self.metric[ii, jj]
+                    prod += self[ii] * other[jj] * self.metric[ii, jj]
             return prod
-        # A four-vector multiplied by a number
+        # Four-vector multiplied by a number
         elif isinstance(other, float) or isinstance(other, int):
-            prod = other * self.v
+            prod = np.ndarray.__mul__(self, other)
             return Fourvector(prod)
 
         else:
@@ -993,7 +976,7 @@ class Fourvector:
 
         Only power 2 (Minkowski square) supported.
 
-        >>> x = np.array([1,1,1,1])
+        >>> x = [1,1,1,1]
         >>> p = Fourvector(x)
         >>> print p**2
         -2.0
@@ -1008,7 +991,7 @@ class Fourvector:
 
         headings = ["E", "P_x", "P_y", "P_z"]
         table = pt(headings)
-        table.add_row(self.v.tolist())
+        table.add_row(self.tolist())
 
         return str(table)
 
@@ -1018,41 +1001,47 @@ class Fourvector:
 
         The square-root of the Minkowski square.
 
-        >>> x = np.array([5,1,1,1])
+        >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
         >>> print abs(p)
         4.69041575982
         """
         return self.__mul__(self)**0.5
 
+    def __getslice__(self, other1, other2):
+        """
+        If four-vector is sliced, return a regular numpy array.
+        """
+        return np.array(np.ndarray.__getslice__(self, other1, other2))
+
     def phi(self):
         """
         Find angle phi around beam line.
 
-        >>> x = np.array([5,1,1,1])
+        >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
         >>> print p.phi()
         0.785398163397
         """
-        tan_phi = self.v[2] / self.v[1]
+        tan_phi = self[2] / self[1]
         phi = np.arctan(tan_phi)
         return phi
 
     def PT(self):
         """ Return PT - transverse magnitude of vector. """
-        return (self.v[1]**2 + self.v[2]**2)**0.5
+        return (self[1]**2 + self[2]**2)**0.5
 
     def theta(self):
         """
         Find angle theta between vector and beam line.
 
-        >>> x = np.array([5,1,1,1])
+        >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
         >>> print p.theta()
         0.955316618125
         """
         r = self.PT()
-        z = self.v[3]
+        z = self[3]
         tan_theta = r / z
         theta = np.arctan(tan_theta)
         if z < 0:
@@ -1063,13 +1052,13 @@ class Fourvector:
         """
         Find pseudo-rapidity.
 
-        >>> x = np.array([5,1,1,1])
+        >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
         >>> print p.eta()
         0.658478948462
         """
         theta = self.theta()
-        eta = -np.log(np.tan(theta/2.))
+        eta = -np.log(np.tan(theta/2.))  # Definiton of pseudo-rapidity
         return eta
 
     def boost(self, beta):
@@ -1082,7 +1071,7 @@ class Fourvector:
         Returns:
         boosted -- Fourvector class, self but boosted by beta
 
-        >>> x = np.array([5,1,1,1])
+        >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
         >>> beta = p.beta_rest()
         >>> print p.boost(beta)
@@ -1093,40 +1082,59 @@ class Fourvector:
         +---------------+--------------------+--------------------+--------------------+
         """
 
-        # Make boost matrix
+        # Boost parameters
         beta_norm = np.linalg.norm(beta)
         gamma = (1. - beta_norm**2)**-0.5
+        
+        # Three-by-three sub-block of matrix
+        # . . . .  
+        # . * * *
+        # . * * *
+        # . * * *
         beta_matrix = np.identity(3) + np.outer(beta, beta) * (gamma - 1.) / beta_norm**2
 
+        # Length-four top row of matrix
+        # * * * *  
+        # . . . . 
+        # . . . . 
+        # . . . . 
         row = np.array([gamma, -gamma * beta[0], -gamma * beta[1], -gamma * beta[2]])
+        
+        # Length-three column of matrix
+        # . . . . 
+        # * . . . 
+        # * . . . 
+        # * . . . 
         col = np.array([-gamma * beta[0], -gamma * beta[1], -gamma * beta[2]])
+        
+        # Make \Lambda matrix by stacking sub-bloc, row and column
         lambda_ = np.column_stack([col, beta_matrix])
         lambda_ = np.row_stack([row, lambda_])
 
-        # Apply boost
-        unprimed = np.array(self.v)
-        primed = lambda_.dot(unprimed)
+        # Apply boost to self by matrix multiplication
+        primed = lambda_.dot(self)
 
         return Fourvector(primed)
 
     def beta_rest(self):
         """
-        Find beta for Lorentz boost such that this four-vector is at rest.
+        Find beta for Lorentz boost to a frame in which this four-vector is at rest.
 
         Returns:
-        beta -- Array of beta (b1, b2, b3)
+        beta -- Numpy array of beta (b1, b2, b3)
 
-        >>> x = np.array([5,1,1,1])
+        >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
         >>> print p.beta_rest()
         [ 0.2  0.2  0.2]
-
+        
         """
-        gamma = self.v[0] / abs(self)
+        
+        gamma = self[0] / abs(self)  # gamma = E / M 
         beta_norm = (1. - gamma**-2)**0.5
-        direction = np.array(self.v[1:4])
-        direction = direction / np.linalg.norm(direction)
-        beta = direction * beta_norm
+        unit = self[1:4] / np.linalg.norm(self[1:4])  # Unit vector in direction of boost
+        
+        beta = unit * beta_norm
 
         return beta
 
@@ -1166,11 +1174,7 @@ def Fourvector_eta(PT, eta, phi, mass=0.):
     theta = 2. * np.arctan(np.exp(-eta))
     p = PT / sin(theta)
     E = (p**2 + mass**2)**0.5
-    v = np.array([E,
-                  p * sin(theta) * cos(phi),
-                  p * sin(theta) * sin(phi),
-                  p * cos(theta)
-                  ])
+    v = [E, p * sin(theta) * cos(phi), p * sin(theta) * sin(phi), p * cos(theta)]
 
     # Make new four-vector with calculated Cartesian co-ordinates
     return Fourvector(v)
