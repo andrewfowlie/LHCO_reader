@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from __future__ import division
 
 """
 Read an LHCO file, from e.g. PGS, into a convenient format of classes.
@@ -15,7 +17,7 @@ e.g. an electron's transverse momentum
 Simple usage is e.g.
 
 >>> events = Events("example.lhco")
->>> print events[11]["electron"][0]["PT"]
+>>> print(events[11]["electron"][0]["PT"])
 49.07
 
 that code loads an LHCO file, and prints the transverse momentum of the first
@@ -82,43 +84,45 @@ class Events(list):
     entry in the list is an event. Simple usuage e.g.
 
     >>> events=Events("example.lhco")
-    >>> print events
+    >>> print(events)
     +------------------+--------------+
     | Number of events |    10000     |
     |       File       | example.lhco |
     +------------------+--------------+
-    >>> print events[100]
+    >>> print(events[100])
     +----------+-------+-------+-------+-------+------+------+-------+
     |  Object  |  eta  |  phi  |   PT  | jmass | ntrk | btag | hadem |
     +----------+-------+-------+-------+-------+------+------+-------+
+    | electron | -2.14 | 1.816 | 16.76 |  0.0  | -1.0 | 0.0  |  0.01 |
+    | electron | 1.183 | 4.001 | 15.84 |  0.0  | 1.0  | 0.0  |  0.0  |
+    |  photon  |  0.13 | 2.109 | 16.68 |  0.0  | 0.0  | 0.0  |  0.05 |
+    |  photon  | 0.217 | 6.149 |  5.7  |  0.0  | 0.0  | 0.0  |  0.08 |
     |   jet    | 0.434 | 6.161 |  17.5 |  4.12 | 4.0  | 0.0  |  0.57 |
     |   jet    | 1.011 | 0.196 | 10.71 |  1.63 | 4.0  | 0.0  |  3.64 |
     |   jet    | 1.409 | 4.841 |  5.11 |  0.53 | 2.0  | 0.0  |  0.3  |
-    |  photon  |  0.13 | 2.109 | 16.68 |  0.0  | 0.0  | 0.0  |  0.05 |
-    |  photon  | 0.217 | 6.149 |  5.7  |  0.0  | 0.0  | 0.0  |  0.08 |
     |   MET    |  0.0  | 4.221 | 16.18 |  0.0  | 0.0  | 0.0  |  0.0  |
-    | electron | -2.14 | 1.816 | 16.76 |  0.0  | -1.0 | 0.0  |  0.01 |
-    | electron | 1.183 | 4.001 | 15.84 |  0.0  | 1.0  | 0.0  |  0.0  |
     +----------+-------+-------+-------+-------+------+------+-------+
-    >>> print events[100]["electron"].order("phi")
-    +----------+-------+-------+-------+-------+------+------+-------+
-    |  Object  |  eta  |  phi  |   PT  | jmass | ntrk | btag | hadem |
-    +----------+-------+-------+-------+-------+------+------+-------+
-    | electron | 1.183 | 4.001 | 15.84 |  0.0  | 1.0  | 0.0  |  0.0  |
-    | electron | -2.14 | 1.816 | 16.76 |  0.0  | -1.0 | 0.0  |  0.01 |
-    +----------+-------+-------+-------+-------+------+------+-------+
-    >>> print events[100]["electron"][0]
+
+    >>> print(events[100]["electron"].order("phi"))
     +----------+-------+-------+-------+-------+------+------+-------+
     |  Object  |  eta  |  phi  |   PT  | jmass | ntrk | btag | hadem |
     +----------+-------+-------+-------+-------+------+------+-------+
     | electron | 1.183 | 4.001 | 15.84 |  0.0  | 1.0  | 0.0  |  0.0  |
+    | electron | -2.14 | 1.816 | 16.76 |  0.0  | -1.0 | 0.0  |  0.01 |
     +----------+-------+-------+-------+-------+------+------+-------+
-    >>> print events[100]["electron"][0]["PT"]
+    >>> print(events[100]["electron"][0])
+    +----------+-------+-------+-------+-------+------+------+-------+
+    |  Object  |  eta  |  phi  |   PT  | jmass | ntrk | btag | hadem |
+    +----------+-------+-------+-------+-------+------+------+-------+
+    | electron | 1.183 | 4.001 | 15.84 |  0.0  | 1.0  | 0.0  |  0.0  |
+    +----------+-------+-------+-------+-------+------+------+-------+
+    >>> print(events[100]["electron"][0]["PT"])
     15.84
 
     Each list entry is itself an Event class - a class designed to store
     a single event.
     """
+
     def __init__(self, f_name=None, list_=None, cut_list=None):
         """
         Parse an LHCO file into a list of Event objects.
@@ -135,7 +139,7 @@ class Events(list):
         if list_:
             list.__init__(self, list_)  # Ordinary list initialization
         self.f_name = f_name  # Save file name
-       
+
         if cut_list:
             self.cut_list = cut_list  # Save cuts
         else:
@@ -209,7 +213,7 @@ class Events(list):
 
         Store the information in a dictionary.
 
-        >>> print events.number()
+        >>> print(events.number())
         +------+-------+------+--------+-------+----------+---------------+--------------+
         | tau  |  jet  | muon | photon |  MET  | electron | Total objects | Total events |
         +------+-------+------+--------+-------+----------+---------------+--------------+
@@ -250,11 +254,18 @@ class Events(list):
 
         # Read expected number of events from LHCO file
         exp_events = None
-        with open(self.f_name, 'r') as f:
-            for line in f:
-                if line.strip().startswith("##  Number of Event"):
-                    exp_events = int(line.split(":")[1])
-                    break
+
+        try:
+            with open(self.f_name, 'r') as f:
+                for line in f:
+                    if line.strip().startswith("##  Number of Event"):
+                        exp_events = int(line.split(":")[1])
+                        break
+                    if line.strip().startswith("# | Number of events |"):
+                        exp_events = int(line.split("|")[2])
+                        break
+        except:
+            pass
 
         return exp_events
 
@@ -287,7 +298,7 @@ class Events(list):
         Rather than attempting to print thousands of events, print summary
         information about set of events.
 
-        >>> print events
+        >>> print(events)
         +------------------+--------------+
         | Number of events |    10000     |
         |       File       | example.lhco |
@@ -314,28 +325,28 @@ class Events(list):
     def cut(self, cut):
         """
         Apply a cut.
-        
+
         Arguments:
         cut -- Cut to apply to events
-        
+
         >>> events = Events("example.lhco")
         >>> tau = lambda event: event.number()["tau"] == 1
         >>> events.cut(tau)
-        >>> print events
+        >>> print(events)
         +------------------------------------------------+--------------+
         |                Number of events                |     8656     |
         |                      File                      | example.lhco |
         | tau = lambda event: event.number()["tau"] == 1 |    0.8656    |
         +------------------------------------------------+--------------+
         """
-        
+
         self_org = copy.deepcopy(self)
         for event in self_org:
             if cut(event):
                 self.remove(event)
-       
+
         # Append information about the cut to events
-        acceptance = float(len(self)) / float(len(self_org))
+        acceptance = len(self) / len(self_org)
         self.cut_list.append([cut, acceptance])
 
     def column(self, key, prop):
@@ -396,7 +407,7 @@ class Events(list):
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.hist(data, 50, normed=1, facecolor='Crimson', alpha=0.9)  # Plot data
+        ax.hist(data, 50, normed=1, facecolor='Crimson', alpha=0.9)
         ax.grid()  # Add grid lines
 
         ax.set_title(key)  # Titles etc
@@ -406,33 +417,76 @@ class Events(list):
 
         plt.show()  # Show the plot on screen
 
-    def __getslice__(self,i,j):
+    def __getslice__(self, i, j):
         """
         Slicing returns an Events class rather than a list.
 
-        >>> print events[:100]
-        +------------------+------+
-        | Number of events | 100  |
-        |       File       | None |
-        +------------------+------+
+        >>> print(events[:100])
+        +------------------+--------------------------------+
+        | Number of events |              100               |
+        |       File       | Events 0 to 99 in example.lhco |
+        +------------------+--------------------------------+
         """
-        return Events(list_=list.__getslice__(self, i, j))
+        events = Events(list_=list.__getslice__(self, i, j))
+        events.f_name = "Events {} to {} in {}".format(i, j-1, self.f_name)
+        return events
 
     def __mul__(self, other):
         """
         Multiplying returns an Events class rather than a list.
-        >>> print events * 5
-        +------------------+-------+
-        | Number of events | 50000 |
-        |       File       |  None |
-        +------------------+-------+
+        >>> print(events * 5)
+        +------------------+--------------------------+
+        | Number of events |          50000           |
+        |       File       | 5 copies of example.lhco |
+        +------------------+--------------------------+
         """
-        return Events(list_=list.__mul__(self,other))
+        events = Events(list_=list.__mul__(self, other))
+        events.f_name = "{} copies of {}".format(other, self.f_name)
+        return events
 
     def __rmul__(self, other):
         """ See __mul__. """
         return self.__mul__(other)
 
+    def LHCO(self, file_name):
+        """
+        Write events in LHCO format.
+
+        Arguments:
+        file_name -- Name of LHCO file to be written
+
+        >>> events[:10].LHCO("test.lhco")
+        >>> same_events = Events("test.lhco")
+        >>> print(events[1])
+        +----------+--------+-------+-------+-------+------+------+-------+
+        |  Object  |  eta   |  phi  |   PT  | jmass | ntrk | btag | hadem |
+        +----------+--------+-------+-------+-------+------+------+-------+
+        | electron | -0.95  | 0.521 |  41.2 |  0.0  | 1.0  | 0.0  |  0.0  |
+        | electron | -2.153 | 4.152 | 36.66 |  0.0  | -1.0 | 0.0  |  0.0  |
+        |   jet    | -2.075 | 2.035 | 37.34 |  4.58 | 6.0  | 0.0  |  1.54 |
+        |   jet    | 2.188  | 4.088 | 12.71 |  2.77 | 4.0  | 0.0  |  2.14 |
+        |   MET    |  0.0   | 5.378 |  9.6  |  0.0  | 0.0  | 0.0  |  0.0  |
+        +----------+--------+-------+-------+-------+------+------+-------+
+        >>> print(same_events[1])
+        +----------+--------+-------+-------+-------+------+------+-------+
+        |  Object  |  eta   |  phi  |   PT  | jmass | ntrk | btag | hadem |
+        +----------+--------+-------+-------+-------+------+------+-------+
+        | electron | -0.95  | 0.521 |  41.2 |  0.0  | 1.0  | 0.0  |  0.0  |
+        | electron | -2.153 | 4.152 | 36.66 |  0.0  | -1.0 | 0.0  |  0.0  |
+        |   jet    | -2.075 | 2.035 | 37.34 |  4.58 | 6.0  | 0.0  |  1.54 |
+        |   jet    | 2.188  | 4.088 | 12.71 |  2.77 | 4.0  | 0.0  |  2.14 |
+        |   MET    |  0.0   | 5.378 |  9.6  |  0.0  | 0.0  | 0.0  |  0.0  |
+        +----------+--------+-------+-------+-------+------+------+-------+
+        """
+
+        preamble = """LHCO file created with LHCO_reader (https://github.com/innisfree/LHCO_reader).
+See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHCO format."""
+        print(comment(preamble), file=open(file_name, "w"), end="\n\n")
+        print(comment(self), file=open(file_name, "a"), end="\n\n")
+
+        for nn, event in enumerate(self):
+            print("# Event number:", nn, file=open(file_name, "a"))
+            event.LHCO(file_name)
 
 ###############################################################################
 
@@ -441,8 +495,8 @@ class Event(dict):
     """
     A single LHCO event.
 
-    Parse a list of lines of a single LHCO event from an LHCO file into a single
-    Event class. This class inherits the dictionary class - it is itself
+    Parse a list of lines of a single LHCO event from an LHCO file into a
+    single Event class. This class inherits the dictionary class - it is itself
     a dictionary with keys.
 
     Dictionary keys are objects that might be in an event, e.g.
@@ -456,21 +510,24 @@ class Event(dict):
     Each dicionary entry is iteself an Objects class - a class designed for a
     list of objects, e.g. all electrons in an event.
 
-    >>> print Event()["electron"]
+    >>> print(Event()["electron"])
     +--------+-----+-----+----+-------+------+------+-------+
     | Object | eta | phi | PT | jmass | ntrk | btag | hadem |
     +--------+-----+-----+----+-------+------+------+-------+
     +--------+-----+-----+----+-------+------+------+-------+
     """
-    def __init__(self, lines=None, dictionary=None):
+
+    def __init__(self, lines=None, dictionary=None, trigger_info=None):
         """
         Parse a string from an LHCO file into a single event.
 
         Arguments:
         string -- String of single LHCO event from an LHCO file
         dictionary -- Dictionary or zipped lists for new dictionary
+        trigger_info -- Tuple of event number and trigger word value
         """
-        self.__lines = lines  # Save list of lines of whole event
+        self._lines = lines  # Save list of lines of whole event
+        self.trigger_info = trigger_info
 
         # Dictionary of object names that appear in event, index corresponds
         # to the number in the LHCO convention. Dictionary rather than list,
@@ -489,7 +546,7 @@ class Event(dict):
             self[name] = Objects()  # List of e.g. "electron"s in event
 
         # Check that the string is indeed a non-empty list
-        if isinstance(self.__lines, list) and self.__lines:
+        if isinstance(self._lines, list) and self._lines:
             self.__parse()  # Parse the event
             # Check whether agrees with LHCO file
             if self.__count_number() != sum(self.number().values()):
@@ -497,8 +554,8 @@ class Event(dict):
         else:
             warnings.warn("Adding empty event")
 
-        if dictionary:
-            dict.__init__(self, dictionary)  # Ordinary dictionary initialization
+        if dictionary:  # Ordinary dictionary initialization
+            dict.__init__(self, dictionary)
 
     def __str__(self):
         """
@@ -510,8 +567,8 @@ class Event(dict):
         table = pt(headings)
 
         # Add rows to the table
-        for objects in self.itervalues():  # Iterate object types, e.g. electrons
-            for obj in objects:  # Iterate all objects of that type
+        for name in self._names.itervalues():  # Iterate object types e.g electrons
+            for obj in self[name]:  # Iterate all objects of that type
                 table.add_row(obj._row())
 
         return table.get_string()
@@ -522,8 +579,8 @@ class Event(dict):
 
         Returns:
         number -- A dictionary of the numbers of objects of each type
-        
-        >>> print Event().number()
+
+        >>> print(Event().number())
         +-----+-----+------+--------+-----+----------+
         | tau | jet | muon | photon | MET | electron |
         +-----+-----+------+--------+-----+----------+
@@ -546,8 +603,7 @@ class Event(dict):
         Returns:
         number (int) -- Number of events in objects in the event.
         """
-        return int(self.__lines[-1].split()[0])
-
+        return int(self._lines[-1].split()[0])
 
     def add_object(self, name, dictionary=None):
         """
@@ -572,21 +628,24 @@ class Event(dict):
         this class itself.
         """
 
-        properties = Object()._properties # Expected properties of object
-        number_properties = len(properties)
+        properties = Object()._properties  # Expected properties of object
         names = self._names
 
-        for line in self.__lines:  # Parse the event line by line
+        for line in self._lines:  # Parse the event line by line
 
             words = line.split()
             number = words[0].strip()  # Number of object in event
 
-            if number is "0":  # "0" events are trigger information, ignore
+            if number is "0":  # "0" events are trigger information
+                self.trigger_info = map(int, words[1:])
                 continue
 
             try:
                 # Split line into individual properties
                 values = map(float, words)
+                # The first two - # and typ - are integers
+                values[0] = int(values[0])
+                values[1] = int(values[1])
                 index = words[1].strip()  # Index of object in LHCO format
                 name = names[index]  # Name of object, e.g. "electron"
                 # Append an Object with the LHCO properties
@@ -601,10 +660,14 @@ class Event(dict):
         Adds two events, returning a new Event class with all the e.g.
         electrons that were in original two events.
 
-        >>> print events[0] + events[1]
+        >>> print(events[0] + events[1])
         +----------+--------+-------+--------+-------+------+------+-------+
         |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
         +----------+--------+-------+--------+-------+------+------+-------+
+        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
+        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
+        | electron | -2.153 | 4.152 | 36.66  |  0.0  | -1.0 | 0.0  |  0.0  |
+        | electron | -0.95  | 0.521 |  41.2  |  0.0  | 1.0  | 0.0  |  0.0  |
         |   jet    | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
         |   jet    | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
         |   jet    | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
@@ -615,11 +678,8 @@ class Event(dict):
         |   jet    | 2.188  | 4.088 | 12.71  |  2.77 | 4.0  | 0.0  |  2.14 |
         |   MET    |  0.0   | 2.695 | 21.43  |  0.0  | 0.0  | 0.0  |  0.0  |
         |   MET    |  0.0   | 5.378 |  9.6   |  0.0  | 0.0  | 0.0  |  0.0  |
-        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
-        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
-        | electron | -2.153 | 4.152 | 36.66  |  0.0  | -1.0 | 0.0  |  0.0  |
-        | electron | -0.95  | 0.521 |  41.2  |  0.0  | 1.0  | 0.0  |  0.0  |
         +----------+--------+-------+--------+-------+------+------+-------+
+
         """
         combination = Event()
         for key in self.keys():
@@ -630,10 +690,14 @@ class Event(dict):
     def __mul__(self, other):
         """
         Multiplying returns an Event class.
-        >>> print events[0] * 2
+        >>> print(events[0] * 2)
         +----------+--------+-------+--------+-------+------+------+-------+
         |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
         +----------+--------+-------+--------+-------+------+------+-------+
+        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
+        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
+        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
+        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
         |   jet    | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
         |   jet    | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
         |   jet    | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
@@ -648,10 +712,6 @@ class Event(dict):
         |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
         |   MET    |  0.0   | 2.695 | 21.43  |  0.0  | 0.0  | 0.0  |  0.0  |
         |   MET    |  0.0   | 2.695 | 21.43  |  0.0  | 0.0  | 0.0  |  0.0  |
-        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
-        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
-        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
-        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
         +----------+--------+-------+--------+-------+------+------+-------+
         """
         prod = Event()
@@ -663,6 +723,31 @@ class Event(dict):
     def __rmul__(self, other):
         """ See __mul__. """
         return self.__mul__(other)
+
+    def LHCO(self, file_name):
+        """
+        Write event in LHCO format.
+
+        Arguments:
+        file_name -- Name of LHCO file to be written
+        """
+
+        print(comment(self), file=open(file_name, "a"))
+
+        header = ["#", "number", "trig word"]
+        header = [oo.ljust(10) for oo in header]
+        print(*header, file=open(file_name, "a"))
+
+        trigger = [0] + self.trigger_info
+        trigger = [repr(oo).ljust(10) for oo in trigger]
+        print(*trigger, file=open(file_name, "a"))
+
+        header = ["#", "typ", "eta", "phi", "pt", "jmass", "ntrk", "btag", "had/em", "dummy", "dummy"]
+        header = [oo.ljust(10) for oo in header]
+        print(*header, file=open(file_name, "a"))
+
+        for name in self._names.itervalues():
+            self[name].LHCO(file_name)
 
 ###############################################################################
 
@@ -742,7 +827,7 @@ class Objects(list):
 
         >>> e = events[100]
         >>> e["jet+electron"] = e["jet"] + e["electron"]
-        >>> print e["jet+electron"]
+        >>> print(e["jet+electron"])
         +----------+-------+-------+-------+-------+------+------+-------+
         |  Object  |  eta  |  phi  |   PT  | jmass | ntrk | btag | hadem |
         +----------+-------+-------+-------+-------+------+------+-------+
@@ -754,7 +839,7 @@ class Objects(list):
         +----------+-------+-------+-------+-------+------+------+-------+
         >>> for ii, e in enumerate(events):
         ...     events[ii]["jet+electron"] = e["jet"] + e["electron"]
-        >>> print events[0]["jet+electron"]
+        >>> print(events[0]["jet+electron"])
         +----------+--------+-------+--------+-------+------+------+-------+
         |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
         +----------+--------+-------+--------+-------+------+------+-------+
@@ -767,7 +852,7 @@ class Objects(list):
         | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
         | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
         +----------+--------+-------+--------+-------+------+------+-------+
-        >>> print events[0]["jet+electron"].order("PT")
+        >>> print(events[0]["jet+electron"].order("PT"))
         +----------+--------+-------+--------+-------+------+------+-------+
         |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
         +----------+--------+-------+--------+-------+------+------+-------+
@@ -780,7 +865,7 @@ class Objects(list):
         |   jet    | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
         |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
         +----------+--------+-------+--------+-------+------+------+-------+
-        >>> print events.number()
+        >>> print(events.number())
         +------+--------------+-------+------+--------+-------+----------+---------------+--------------+
         | tau  | jet+electron |  jet  | muon | photon |  MET  | electron | Total objects | Total events |
         +------+--------------+-------+------+--------+-------+----------+---------------+--------------+
@@ -791,11 +876,11 @@ class Objects(list):
 
         return combination
 
-    def __getslice__(self,i,j):
+    def __getslice__(self, i, j):
         """
         Slicing returns an Objects class rather than a list.
 
-        >>> print events[0]["jet"][:2]
+        >>> print(events[0]["jet"][:2])
         +--------+--------+-------+--------+-------+------+------+-------+
         | Object |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
         +--------+--------+-------+--------+-------+------+------+-------+
@@ -809,7 +894,7 @@ class Objects(list):
         """
         Multiplying returns an Objects class rather than a list.
 
-        >>> print events[0]["jet"][:2] * 5
+        >>> print(events[0]["jet"][:2] * 5)
         +--------+--------+-------+--------+-------+------+------+-------+
         | Object |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
         +--------+--------+-------+--------+-------+------+------+-------+
@@ -831,6 +916,18 @@ class Objects(list):
         """ See __mul__. """
         return self.__mul__(other)
 
+    def LHCO(self, file_name):
+        """
+        Write objects in LHCO format.
+
+        Arguments:
+        file_name -- Name of LHCO file to be written
+        """
+        if self:
+            self.order("PT")
+            for oo in self:
+                oo.LHCO(file_name)
+
 ###############################################################################
 
 
@@ -850,6 +947,7 @@ class Object(dict):
     - btag
     - hadem
     """
+
     def __init__(self, name=None, dictionary=None):
         """
         Initalize a single object, e.g. a single electron.
@@ -859,8 +957,8 @@ class Object(dict):
         dictionary -- A dictionary, zipped lists etc for a new dictionary
         """
 
-        if dictionary:
-            dict.__init__(self, dictionary)  # Ordinary dictionary initialization
+        if dictionary:  # Ordinary dictionary initialization
+            dict.__init__(self, dictionary)
         self.name = name  # Save name of object
 
         # List of object properties in LHCO file, these are row headings in
@@ -931,14 +1029,29 @@ class Object(dict):
         >>> electron["eta"] = 1
         >>> electron["phi"] = 1
         >>> electron["jmass"] = 0.
-        >>> print electron.vector()
+        >>> print(electron.vector())
         +---------------+---------------+---------------+---------------+
         |       E       |      P_x      |      P_y      |      P_z      |
         +---------------+---------------+---------------+---------------+
         | 15.4308063482 | 5.40302305868 | 8.41470984808 | 11.7520119364 |
         +---------------+---------------+---------------+---------------+
         """
-        return Fourvector_eta(self["PT"], self["eta"], self["phi"], mass=self["jmass"])
+        return Fourvector_eta(self["PT"],
+                              self["eta"],
+                              self["phi"],
+                              mass=self["jmass"])
+
+    def LHCO(self, file_name):
+        """
+        Write object in LHCO format.
+
+        Arguments:
+        file_name -- Name of LHCO file to be written
+        """
+        list_ = []
+        for key in self._properties:
+            list_.append(repr(self[key]).ljust(10))
+        print(*list_, file=open(file_name, "a"))
 
 ###############################################################################
 
@@ -952,21 +1065,23 @@ class Fourvector(np.ndarray):
 
     >>> x = [1,1,1,1]
     >>> p = Fourvector(x)
-    >>> print p
+    >>> print(p)
     +---+-----+-----+-----+
     | E | P_x | P_y | P_z |
     +---+-----+-----+-----+
     | 1 |  1  |  1  |  1  |
     +---+-----+-----+-----+
-    >>> print 2 * p - p
+    >>> print(2 * p - p)
     +---+-----+-----+-----+
     | E | P_x | P_y | P_z |
     +---+-----+-----+-----+
     | 1 |  1  |  1  |  1  |
     +---+-----+-----+-----+
     """
+
     def __new__(self, v=None):
-        """ Four-vector from Cartesian co-ordinates.
+        """
+        Make four-vector from Cartesian co-ordinates.
 
         Arguments:
         v -- Length 4 list of four-vector in Cartesian co-ordinates
@@ -974,13 +1089,14 @@ class Fourvector(np.ndarray):
         if v is None:
             v = [0] * 4  # Default is empty four-vector
         return np.asarray(v).view(self)
-        
+
     def __init__(self, v=None):
-        """ Four-vector from Cartesian co-ordinates.
+        """
+        Initialize four-vector from Cartesian co-ordinates.
 
         Arguments:
         v -- Length 4 list of four-vector in Cartesian co-ordinates
-        """      
+        """
         self.metric = np.diag([1, -1, -1, -1])  # Define metric
 
     def __mul__(self, other):
@@ -992,7 +1108,7 @@ class Fourvector(np.ndarray):
 
         >>> x = [1,1,1,1]
         >>> p = Fourvector(x)
-        >>> print p*p
+        >>> print(p*p)
         -2.0
         """
 
@@ -1023,7 +1139,7 @@ class Fourvector(np.ndarray):
 
         >>> x = [1,1,1,1]
         >>> p = Fourvector(x)
-        >>> print p**2
+        >>> print(p**2)
         -2.0
         """
         if not power == 2:
@@ -1048,7 +1164,7 @@ class Fourvector(np.ndarray):
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
-        >>> print abs(p)
+        >>> print(abs(p))
         4.69041575982
         """
         return self.__mul__(self)**0.5
@@ -1065,7 +1181,7 @@ class Fourvector(np.ndarray):
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
-        >>> print p.phi()
+        >>> print(p.phi())
         0.785398163397
         """
         tan_phi = self[2] / self[1]
@@ -1073,11 +1189,11 @@ class Fourvector(np.ndarray):
         return phi
 
     def PT(self):
-        """ 
-        Return PT - transverse magnitude of vector. 
+        """
+        Return PT - transverse magnitude of vector.
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
-        >>> print p.PT()
+        >>> print(p.PT())
         1.41421356237
         """
         return (self[1]**2 + self[2]**2)**0.5
@@ -1088,7 +1204,7 @@ class Fourvector(np.ndarray):
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
-        >>> print p.theta()
+        >>> print(p.theta())
         0.955316618125
         """
         r = self.PT()
@@ -1096,7 +1212,7 @@ class Fourvector(np.ndarray):
         tan_theta = r / z
         theta = np.arctan(tan_theta)
         if z < 0:
-          theta += pi
+            theta += pi
         return theta
 
     def eta(self):
@@ -1105,7 +1221,7 @@ class Fourvector(np.ndarray):
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
-        >>> print p.eta()
+        >>> print(p.eta())
         0.658478948462
         """
         theta = self.theta()
@@ -1125,7 +1241,7 @@ class Fourvector(np.ndarray):
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
         >>> beta = p.beta_rest()
-        >>> print p.boost(beta)
+        >>> print(p.boost(beta))
         +---------------+--------------------+--------------------+--------------------+
         |       E       |        P_x         |        P_y         |        P_z         |
         +---------------+--------------------+--------------------+--------------------+
@@ -1136,28 +1252,31 @@ class Fourvector(np.ndarray):
         # Boost parameters
         beta_norm = np.linalg.norm(beta)
         gamma = (1. - beta_norm**2)**-0.5
-        
+
         # Three-by-three sub-block of matrix
-        # . . . .  
+        # . . . .
         # . * * *
         # . * * *
         # . * * *
         beta_matrix = np.identity(3) + np.outer(beta, beta) * (gamma - 1.) / beta_norm**2
 
         # Length-four top row of matrix
-        # * * * *  
-        # . . . . 
-        # . . . . 
-        # . . . . 
-        row = np.array([gamma, -gamma * beta[0], -gamma * beta[1], -gamma * beta[2]])
-        
+        # * * * *
+        # . . . .
+        # . . . .
+        # . . . .
+        row = np.array([gamma,
+                        -gamma * beta[0],
+                        -gamma * beta[1],
+                        -gamma * beta[2]])
+
         # Length-three column of matrix
-        # . . . . 
-        # * . . . 
-        # * . . . 
-        # * . . . 
+        # . . . .
+        # * . . .
+        # * . . .
+        # * . . .
         col = np.array([-gamma * beta[0], -gamma * beta[1], -gamma * beta[2]])
-        
+
         # Make \Lambda matrix by stacking sub-bloc, row and column
         lambda_ = np.column_stack([col, beta_matrix])
         lambda_ = np.row_stack([row, lambda_])
@@ -1169,22 +1288,24 @@ class Fourvector(np.ndarray):
 
     def beta_rest(self):
         """
-        Find beta for Lorentz boost to a frame in which this four-vector is at rest.
+        Find beta for Lorentz boost to a frame in which this four-vector is at
+        rest.
 
         Returns:
         beta -- Numpy array of beta (b1, b2, b3)
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
-        >>> print p.beta_rest()
+        >>> print(p.beta_rest())
         [ 0.2  0.2  0.2]
-        
+
         """
-        
-        gamma = self[0] / abs(self)  # gamma = E / M 
+
+        gamma = self[0] / abs(self)  # gamma = E / M
         beta_norm = (1. - gamma**-2)**0.5
-        unit = self[1:4] / np.linalg.norm(self[1:4])  # Unit vector in direction of boost
-        
+        # Unit vector in direction of boost
+        unit = self[1:4] / np.linalg.norm(self[1:4])
+
         beta = unit * beta_norm
 
         return beta
@@ -1212,25 +1333,35 @@ def Fourvector_eta(PT, eta, phi, mass=0.):
     >>> PT = 10.
     >>> mass = 1.
     >>> p = Fourvector_eta(PT, eta, phi, mass=mass)
-    >>> print p
+    >>> print(p)
     +---------------+---------------+---------------+---------------+
     |       E       |      P_x      |      P_y      |      P_z      |
     +---------------+---------------+---------------+---------------+
     | 15.4631751123 | 5.40302305868 | 8.41470984808 | 11.7520119364 |
     +---------------+---------------+---------------+---------------+
-    >>> print p.eta(), p.phi(), p.PT(), abs(p)
-    1.0 1.0 10.0 1.0
+    >>> print(p.eta())
+    1.0
+    >>> print(p.phi())
+    1.0
+    >>> print(p.PT())
+    10.0
+    >>> print(abs(p))
+    1.0
     """
 
     theta = 2. * np.arctan(np.exp(-eta))
     p = PT / sin(theta)
     E = (p**2 + mass**2)**0.5
-    v = [E, p * sin(theta) * cos(phi), p * sin(theta) * sin(phi), p * cos(theta)]
+    v = [E,
+         p * sin(theta) * cos(phi),
+         p * sin(theta) * sin(phi),
+         p * cos(theta)]
 
     # Make new four-vector with calculated Cartesian co-ordinates
     return Fourvector(v)
 
 ###############################################################################
+
 
 def delta_R(o1, o2):
     """
@@ -1242,8 +1373,9 @@ def delta_R(o1, o2):
 
     Returns:
     delta_R -- Angular separation between objects
-    
-    >>> print delta_R(events[0]["jet"][1], events[0]["jet"][2])
+
+    >>> delta_R_12 = delta_R(events[0]["jet"][1], events[0]["jet"][2])
+    >>> print(delta_R_12)
     4.80541371788
     """
     delta_R = ((o1["eta"] - o2["eta"])**2 + (o1["phi"] - o2["phi"])**2)**0.5
@@ -1251,6 +1383,22 @@ def delta_R(o1, o2):
     return delta_R
 
 ###############################################################################
+
+
+def comment(x):
+    """
+    Places # at the beginning of every line in a string or an object to be
+    represented as a string.
+
+    Arguments:
+    x -- string to be commented
+
+    """
+    return "# " + str(x).replace("\n", "\n# ")
+
+
+###############################################################################
+
 
 if __name__ == "__main__":
     import doctest
