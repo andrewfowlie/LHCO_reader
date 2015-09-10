@@ -135,9 +135,11 @@ class Events(list):
         list_ -- A list for initalizing Events
         cut_list -- Cuts applied to events and their acceptance
         """
-
+        
+        # Ordinary initialization
         if list_:
-            list.__init__(self, list_)  # Ordinary list initialization
+            super(self.__class__, self).__init__(list_) 
+             
         self.f_name = f_name  # Save file name
 
         if cut_list:
@@ -526,6 +528,15 @@ class Event(dict):
         dictionary -- Dictionary or zipped lists for new dictionary
         trigger_info -- Tuple of event number and trigger word value
         """
+        
+        if lines and dictionary:
+            raise("Must specify lines OR dictionary.")
+        
+        # Ordinary initialization
+        if dictionary: 
+            super(self.__class__, self).__init__(dictionary) 
+            return
+        
         self._lines = lines  # Save list of lines of whole event
         self.trigger_info = trigger_info
 
@@ -553,9 +564,6 @@ class Event(dict):
                 warnings.warn("Inconsistent numbers of objects in event:\n" + str(self))
         else:
             warnings.warn("Adding empty event")
-
-        if dictionary:  # Ordinary dictionary initialization
-            dict.__init__(self, dictionary)
 
     def __str__(self):
         """
@@ -957,8 +965,10 @@ class Object(dict):
         dictionary -- A dictionary, zipped lists etc for a new dictionary
         """
 
-        if dictionary:  # Ordinary dictionary initialization
-            dict.__init__(self, dictionary)
+        # Ordinary initialization
+        if dictionary: 
+            super(self.__class__, self).__init__(dictionary) 
+            
         self.name = name  # Save name of object
 
         # List of object properties in LHCO file, these are row headings in
@@ -1088,6 +1098,9 @@ class Fourvector(np.ndarray):
         """
         if v is None:
             v = [0] * 4  # Default is empty four-vector
+        elif len(v) != 4:
+            raise("Four-vector must be length 4!")
+            
         return np.asarray(v).view(self)
 
     def __init__(self, v=None):
