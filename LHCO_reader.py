@@ -1299,6 +1299,42 @@ class Fourvector(np.ndarray):
 
         return Fourvector(primed)
 
+    def gamma(self):
+        """
+        Find gamma for this four-vector:
+        
+        gamma = p_0 / abs(p)
+        
+        Returns:
+        gamma -- Lorentz factor for this four-vector.
+        
+        >>> x = [5,1,0,0]
+        >>> p = Fourvector(x)
+        >>> print(p.gamma())
+        1.02062072616
+
+        """
+        
+        gamma = self[0] / abs(self)  # gamma = E / M
+        return gamma
+
+    def beta(self):
+        """
+        Find beta for this four-vector:
+        
+        Returns:
+        beta -- Beta for this four-vector.
+        
+        >>> x = [5,1,0,0]
+        >>> p = Fourvector(x)
+        >>> print(p.beta())
+        0.2
+
+        """
+        
+        beta = (1. - self.gamma()**-2)**0.5
+        return beta
+
     def beta_rest(self):
         """
         Find beta for Lorentz boost to a frame in which this four-vector is at
@@ -1313,15 +1349,25 @@ class Fourvector(np.ndarray):
         [ 0.2  0.2  0.2]
 
         """
-
-        gamma = self[0] / abs(self)  # gamma = E / M
-        beta_norm = (1. - gamma**-2)**0.5
-        # Unit vector in direction of boost
-        unit = self[1:4] / np.linalg.norm(self[1:4])
-
-        beta = unit * beta_norm
+        beta_norm = self.beta()
+        beta = self.unit_vector() * beta_norm
 
         return beta
+
+    def unit_vector(self):
+        """
+        Find unit vector in 3-vector direction.
+       
+        Returns:
+        unit -- Unit vector
+        
+        >>> x = [5,1,1,1]
+        >>> p = Fourvector(x)
+        >>> print(p.unit_vector())
+        [ 0.57735027  0.57735027  0.57735027]
+        """
+        unit = self[1:] / (self[1]**2 + self[2]**2 + self[3]**2)**0.5
+        return unit
 
 ###############################################################################
 
