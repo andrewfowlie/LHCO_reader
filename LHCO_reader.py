@@ -89,6 +89,10 @@ class Events(list):
     | Number of events |    10000     |
     |       File       | example.lhco |
     +------------------+--------------+
+    
+    Each list entry is itself an Event class - a class designed to store
+    a single event.
+    
     >>> print(events[100])
     +----------+-------+-------+-------+-------+------+------+-------+
     |  Object  |  eta  |  phi  |   PT  | jmass | ntrk | btag | hadem |
@@ -118,12 +122,17 @@ class Events(list):
     +----------+-------+-------+-------+-------+------+------+-------+
     >>> print(events[100]["electron"][0]["PT"])
     15.84
+    
+    >>> events=Events("example.lhco", n_events=250)
+    >>> print(events)
+    +------------------+--------------+
+    | Number of events |     250      |
+    |       File       | example.lhco |
+    +------------------+--------------+
 
-    Each list entry is itself an Event class - a class designed to store
-    a single event.
     """
 
-    def __init__(self, f_name=None, list_=None, cut_list=None):
+    def __init__(self, f_name=None, list_=None, cut_list=None, n_events=None):
         """
         Parse an LHCO file into a list of Event objects.
 
@@ -134,6 +143,7 @@ class Events(list):
         f_name -- Name of an LHCO file, including path
         list_ -- A list for initalizing Events
         cut_list -- Cuts applied to events and their acceptance
+        n_events -- Number of events to read from LHCO file
         """
         
         # Ordinary initialization
@@ -141,6 +151,7 @@ class Events(list):
             super(self.__class__, self).__init__(list_) 
              
         self.f_name = f_name  # Save file name
+        self.n_events = n_events  # Save number of events read
 
         if cut_list:
             self.cut_list = cut_list  # Save cuts
@@ -158,7 +169,7 @@ class Events(list):
             elif not self.__exp_number():  # Check number of parsed events
                 warnings.warn("Couldn't read total number of events from LHCO file")
             elif not self.__exp_number() == len(self):
-                warnings.warn("Events were not parsed")
+                warnings.warn("Did not parse all events in file")
 
     def add_event(self, event):
         """
@@ -203,10 +214,17 @@ class Events(list):
                     # If there is not a "0", line belongs to current event,
                     # not a new event - add it to event
                     event.append(line)
+                    
+                # Don't parse more than a particular number of events
+                if self.n_events and len(self) == self.n_events:
+                    warnings.warn("Did not parse all events in file")
+                    return
 
             # Parse final event in file - because there isn't a following event
             # the final event won't be parsed as above
             self.add_event(event)
+            
+
 
     def number(self):
         """
