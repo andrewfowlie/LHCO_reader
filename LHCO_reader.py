@@ -238,14 +238,14 @@ class Events(list):
         this class itself.
         """
 
-        event = []  # List of all lines of a single event from LHCO file
+        #event = None  # List of all lines of a single event from LHCO file
         n_events = self.n_events
 
         with open(self.f_name, 'r') as f:
             for line in f:
 
-                line = line.strip()  # Remove leading/trailing spaces
-                
+                line = line.lstrip()  # Remove leading/trailing spaces
+
                 # Ignore empty lines
                 if not line:
                     continue
@@ -255,8 +255,10 @@ class Events(list):
                     continue
                 elif line_startswith is "0":  # New event in file
                     # Parse previous event, if there is one
-                    if event:
+                    try:
                         self.add_event(event)  # Add Event class
+                    except:
+                        pass
                     event = [line]  # New event - reset event list
                 else:
                     # If there is not a "0", line belongs to current event,
@@ -431,9 +433,7 @@ class Events(list):
         # Make a list of the desired property
         column = []
         for event in self:
-            for objects in event[key]:
-                column.append(objects[prop])
-
+            column += [objects[prop] for objects in event[key]]
         return column
 
     def mean(self, key, prop):
@@ -1108,9 +1108,7 @@ class Object(dict):
         Arguments:
         file_name -- Name of LHCO file to be written
         """
-        list_ = []
-        for key in _properties:
-            list_.append(repr(self[key]).ljust(10))
+        list_ = [repr(self[key]).ljust(10) for key in _properties]
         print(*list_, file=open(file_name, "a"))
 
 ###############################################################################
