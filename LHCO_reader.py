@@ -245,11 +245,13 @@ class Events(list):
             for line in f:
 
                 line = line.strip()  # Remove leading/trailing spaces
+                
+                # Ignore empty lines
                 if not line:
                     continue
 
                 line_startswith = line[0]
-                if line_startswith is "#" or not line:  # Ignore comments etc
+                if line_startswith is "#":  # Ignore comments etc
                     continue
                 elif line_startswith is "0":  # New event in file
                     # Parse previous event, if there is one
