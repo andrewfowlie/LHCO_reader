@@ -58,15 +58,58 @@ __status__ = "Production"
 
 import os
 import sys
-from prettytable import PrettyTable as pt
-import numpy as np
-from numpy import cos, sin
 import warnings
-import matplotlib.pyplot as plt
-from collections import OrderedDict
-from math import pi
 import inspect
 import copy
+import matplotlib.pyplot as plt
+import numpy as np
+
+from math import pi
+from numpy import cos, sin
+from prettytable import PrettyTable as pt
+from collections import OrderedDict
+
+###############################################################################
+
+# Tuple of object properties in LHCO file, these are row headings in
+# LHCO format, see http://madgraph.phys.ucl.ac.be/Manual/lhco.html
+_properties = ("event",
+               "type",
+               "eta",
+               "phi",
+               "PT",
+               "jmass",
+               "ntrk",
+               "btag",
+               "hadem",
+               "dummy1",
+               "dummy2"
+               )
+
+# Tuple of properties suitable for printing
+_print_properties = ("eta",
+                     "phi",
+                     "PT",
+                     "jmass",
+                     "ntrk",
+                     "btag",
+                     "hadem"
+                     )
+
+# Dictionary of object names that appear in event, index corresponds
+# to the number in the LHCO convention. Dictionary rather than list,
+# because number 5 is missing
+_numbers = (0, 1, 2, 3, 4, 6)
+_names = ("photon",
+          "electron",
+          "muon",
+          "tau",
+          "jet",
+          "MET"
+          )
+_names_dict = dict(zip(_numbers, _names))
+_headings = ["Object"] + list(_print_properties)
+_empty_dict = dict.fromkeys(_names)
 
 ###############################################################################
 
@@ -89,24 +132,23 @@ class Events(list):
     | Number of events |    10000     |
     |       File       | example.lhco |
     +------------------+--------------+
-    
+
     Each list entry is itself an Event class - a class designed to store
     a single event.
-    
+
     >>> print(events[100])
     +----------+-------+-------+-------+-------+------+------+-------+
     |  Object  |  eta  |  phi  |   PT  | jmass | ntrk | btag | hadem |
     +----------+-------+-------+-------+-------+------+------+-------+
-    | electron | -2.14 | 1.816 | 16.76 |  0.0  | -1.0 | 0.0  |  0.01 |
-    | electron | 1.183 | 4.001 | 15.84 |  0.0  | 1.0  | 0.0  |  0.0  |
     |  photon  |  0.13 | 2.109 | 16.68 |  0.0  | 0.0  | 0.0  |  0.05 |
     |  photon  | 0.217 | 6.149 |  5.7  |  0.0  | 0.0  | 0.0  |  0.08 |
+    | electron | -2.14 | 1.816 | 16.76 |  0.0  | -1.0 | 0.0  |  0.01 |
+    | electron | 1.183 | 4.001 | 15.84 |  0.0  | 1.0  | 0.0  |  0.0  |
     |   jet    | 0.434 | 6.161 |  17.5 |  4.12 | 4.0  | 0.0  |  0.57 |
     |   jet    | 1.011 | 0.196 | 10.71 |  1.63 | 4.0  | 0.0  |  3.64 |
     |   jet    | 1.409 | 4.841 |  5.11 |  0.53 | 2.0  | 0.0  |  0.3  |
     |   MET    |  0.0  | 4.221 | 16.18 |  0.0  | 0.0  | 0.0  |  0.0  |
     +----------+-------+-------+-------+-------+------+------+-------+
-
     >>> print(events[100]["electron"].order("phi"))
     +----------+-------+-------+-------+-------+------+------+-------+
     |  Object  |  eta  |  phi  |   PT  | jmass | ntrk | btag | hadem |
@@ -122,7 +164,7 @@ class Events(list):
     +----------+-------+-------+-------+-------+------+------+-------+
     >>> print(events[100]["electron"][0]["PT"])
     15.84
-    
+
     >>> events=Events("example.lhco", n_events=250)
     >>> print(events)
     +------------------+--------------+
@@ -145,11 +187,11 @@ class Events(list):
         cut_list -- Cuts applied to events and their acceptance
         n_events -- Number of events to read from LHCO file
         """
-        
+
         # Ordinary initialization
         if list_:
-            super(self.__class__, self).__init__(list_) 
-             
+            super(self.__class__, self).__init__(list_)
+
         self.f_name = f_name  # Save file name
         self.n_events = n_events  # Save number of events read
 
@@ -197,15 +239,19 @@ class Events(list):
         """
 
         event = []  # List of all lines of a single event from LHCO file
+        n_events = self.n_events
 
         with open(self.f_name, 'r') as f:
             for line in f:
 
                 line = line.strip()  # Remove leading/trailing spaces
-
-                if line.startswith("#") or not line:  # Ignore comments etc
+                if not line:
                     continue
-                elif line.startswith("0"):  # New event in file
+
+                line_startswith = line[0]
+                if line_startswith is "#" or not line:  # Ignore comments etc
+                    continue
+                elif line_startswith is "0":  # New event in file
                     # Parse previous event, if there is one
                     if event:
                         self.add_event(event)  # Add Event class
@@ -214,17 +260,15 @@ class Events(list):
                     # If there is not a "0", line belongs to current event,
                     # not a new event - add it to event
                     event.append(line)
-                    
+
                 # Don't parse more than a particular number of events
-                if self.n_events and len(self) == self.n_events:
+                if n_events and len(self) == n_events:
                     warnings.warn("Did not parse all events in file")
                     return
 
             # Parse final event in file - because there isn't a following event
             # the final event won't be parsed as above
             self.add_event(event)
-            
-
 
     def number(self):
         """
@@ -233,16 +277,16 @@ class Events(list):
 
         Store the information in a dictionary.
 
-        >>> print(events.number())
-        +------+-------+------+--------+-------+----------+---------------+--------------+
-        | tau  |  jet  | muon | photon |  MET  | electron | Total objects | Total events |
-        +------+-------+------+--------+-------+----------+---------------+--------------+
-        | 1512 | 33473 |  3   |  1350  | 10000 |  17900   |     64238     |    10000     |
-        +------+-------+------+--------+-------+----------+---------------+--------------+
-
         Returns:
         number -- Dictionary of numbers of each object, indexed by e.g.
         "electron"
+
+        >>> print(events.number())
+        +------+----------+-------+------+--------+-------+---------------+--------------+
+        | muon | electron |  jet  | tau  | photon |  MET  | Total objects | Total events |
+        +------+----------+-------+------+--------+-------+---------------+--------------+
+        |  3   |  17900   | 33473 | 1512 |  1350  | 10000 |     64238     |    10000     |
+        +------+----------+-------+------+--------+-------+---------------+--------------+
         """
 
         # Increment numbers of objects by looping through events
@@ -508,6 +552,187 @@ See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHC
             print("# Event number:", nn, file=open(file_name, "a"))
             event.LHCO(file_name)
 
+
+###############################################################################
+
+
+class PrintDict(OrderedDict):
+    """
+    An ordinary dictionary with a nice printing function.
+    """
+    def __str__(self):
+        """
+        String the dictionary to an easy to read table.
+        """
+
+        # Make table of dictionary keys and entries
+        table = pt(self.keys())
+        table.add_row(self.values())
+
+        return table.get_string()
+
+###############################################################################
+
+
+class Objects(list):
+    """
+    Objects in an LHCO event of a particular type.
+
+    E.g., a list of all electron objects in an LHCO event. Each indiviudal
+    electron object is an Object class.
+    """
+
+    def order(self, prop):
+        """
+        Order objects by a particular property, e.g. order all jets by
+        transverse momentum, PT.
+
+        The objects are listed in reverse order, biggest to smallest. E.g., if
+        sorted by PT, the hardest jet appears first.
+
+        Arguments:
+        prop -- Property by which to sort objects, e.g. sort by "PT"
+
+        Returns:
+        self - List of objects, now ordered
+        """
+
+        if not self[0].get(prop):
+            warnings.warn("Property not recoginised: " + prop)
+            return
+
+        # Simply sort the list in reverse order, e.g. if sorted by PT,
+        # hardest jet is first
+        self.sort(key=lambda obj: obj[prop], reverse=True)
+
+        return self
+
+    def __str__(self):
+        """
+        String Objects into a nice readable format.
+        """
+
+        # Make table of event
+        table = pt(_headings)
+
+        # Add rows to the table
+        for obj in self:
+            table.add_row(obj._row())
+
+        return table.get_string()
+
+    def __add__(self, other):
+        """
+        Add Objects together, returning a new Objects class.
+
+        E.g. you might wish to add "electron" with "muon" to make an Objects
+        class of all leptons.
+
+        >>> e = events[100]
+        >>> e["jet+electron"] = e["jet"] + e["electron"]
+        >>> print(e["jet+electron"])
+        +----------+-------+-------+-------+-------+------+------+-------+
+        |  Object  |  eta  |  phi  |   PT  | jmass | ntrk | btag | hadem |
+        +----------+-------+-------+-------+-------+------+------+-------+
+        |   jet    | 0.434 | 6.161 |  17.5 |  4.12 | 4.0  | 0.0  |  0.57 |
+        |   jet    | 1.011 | 0.196 | 10.71 |  1.63 | 4.0  | 0.0  |  3.64 |
+        |   jet    | 1.409 | 4.841 |  5.11 |  0.53 | 2.0  | 0.0  |  0.3  |
+        | electron | -2.14 | 1.816 | 16.76 |  0.0  | -1.0 | 0.0  |  0.01 |
+        | electron | 1.183 | 4.001 | 15.84 |  0.0  | 1.0  | 0.0  |  0.0  |
+        +----------+-------+-------+-------+-------+------+------+-------+
+        >>> for ii, e in enumerate(events):
+        ...     events[ii]["jet+electron"] = e["jet"] + e["electron"]
+        >>> print(events[0]["jet+electron"])
+        +----------+--------+-------+--------+-------+------+------+-------+
+        |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+        +----------+--------+-------+--------+-------+------+------+-------+
+        |   jet    | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |   jet    | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |   jet    | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
+        |   jet    | 0.596  | 0.853 | 12.47  |  2.53 | 7.0  | 0.0  |  1.26 |
+        |   jet    | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
+        |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
+        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
+        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
+        +----------+--------+-------+--------+-------+------+------+-------+
+        >>> print(events[0]["jet+electron"].order("PT"))
+        +----------+--------+-------+--------+-------+------+------+-------+
+        |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+        +----------+--------+-------+--------+-------+------+------+-------+
+        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
+        |   jet    | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |   jet    | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
+        |   jet    | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
+        |   jet    | 0.596  | 0.853 | 12.47  |  2.53 | 7.0  | 0.0  |  1.26 |
+        |   jet    | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
+        |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
+        +----------+--------+-------+--------+-------+------+------+-------+
+        >>> print(events.number())
+        +------+----------+-------+------+--------+--------------+-------+---------------+--------------+
+        | muon | electron |  jet  | tau  | photon | jet+electron |  MET  | Total objects | Total events |
+        +------+----------+-------+------+--------+--------------+-------+---------------+--------------+
+        |  3   |  17900   | 33473 | 1512 |  1350  |    51373     | 10000 |     115611    |    10000     |
+        +------+----------+-------+------+--------+--------------+-------+---------------+--------------+
+
+        """
+        combination = Objects(list.__add__(self, other))
+
+        return combination
+
+    def __getslice__(self, i, j):
+        """
+        Slicing returns an Objects class rather than a list.
+
+        >>> print(events[0]["jet"][:2])
+        +--------+--------+-------+--------+-------+------+------+-------+
+        | Object |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+        +--------+--------+-------+--------+-------+------+------+-------+
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        +--------+--------+-------+--------+-------+------+------+-------+
+        """
+        return Objects(list.__getslice__(self, i, j))
+
+    def __mul__(self, other):
+        """
+        Multiplying returns an Objects class rather than a list.
+
+        >>> print(events[0]["jet"][:2] * 5)
+        +--------+--------+-------+--------+-------+------+------+-------+
+        | Object |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+        +--------+--------+-------+--------+-------+------+------+-------+
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        +--------+--------+-------+--------+-------+------+------+-------+
+        """
+        return Objects(list.__mul__(self, other))
+
+    def __rmul__(self, other):
+        """ See __mul__. """
+        return self.__mul__(other)
+
+    def LHCO(self, file_name):
+        """
+        Write objects in LHCO format.
+
+        Arguments:
+        file_name -- Name of LHCO file to be written
+        """
+        if self:
+            self.order("PT")
+            for oo in self:
+                oo.LHCO(file_name)
+
+
 ###############################################################################
 
 
@@ -542,43 +767,34 @@ class Event(dict):
         Parse a string from an LHCO file into a single event.
 
         Arguments:
-        string -- String of single LHCO event from an LHCO file
+        lines -- List of lines of LHCO event from an LHCO file
         dictionary -- Dictionary or zipped lists for new dictionary
         trigger_info -- Tuple of event number and trigger word value
         """
-        
+
         if lines and dictionary:
-            raise("Must specify lines OR dictionary.")
-        
+            raise("Must specify lines or dictionary")
+
         # Ordinary initialization
-        if dictionary: 
-            super(self.__class__, self).__init__(dictionary) 
+        if dictionary:
+            super(self.__class__, self).__init__(dictionary)
             return
-        
+        else:
+            super(self.__class__, self).__init__(_empty_dict)
+
         self._lines = lines  # Save list of lines of whole event
         self.trigger_info = trigger_info
 
-        # Dictionary of object names that appear in event, index corresponds
-        # to the number in the LHCO convention. Dictionary rather than list,
-        # because number 5 is missing
-        self._names = {"0": "photon",
-                       "1": "electron",
-                       "2": "muon",
-                       "3": "tau",
-                       "4": "jet",
-                       "6": "MET"
-                       }
-
         # Build a dictionary of objects appearing in the event,
         # e.g. self["electron"] is initalized to be an empty Objects class
-        for name in self._names.itervalues():
+        for name in _names:
             self[name] = Objects()  # List of e.g. "electron"s in event
 
-        # Check that the string is indeed a non-empty list
-        if isinstance(self._lines, list) and self._lines:
+        # Check that it is a non-empty list
+        if self._lines:
             self.__parse()  # Parse the event
             # Check whether agrees with LHCO file
-            if self.__count_number() != sum(self.number().values()):
+            if self.__count_file() != self.count_parsed():
                 warnings.warn("Inconsistent numbers of objects in event:\n" + str(self))
         else:
             warnings.warn("Adding empty event")
@@ -589,11 +805,10 @@ class Event(dict):
         """
 
         # Make table of event
-        headings = ["Object"] + Object()._print_properties
-        table = pt(headings)
+        table = pt(_headings)
 
         # Add rows to the table
-        for name in self._names.itervalues():  # Iterate object types e.g electrons
+        for name in _names:  # Iterate object types e.g electrons
             for obj in self[name]:  # Iterate all objects of that type
                 table.add_row(obj._row())
 
@@ -607,11 +822,11 @@ class Event(dict):
         number -- A dictionary of the numbers of objects of each type
 
         >>> print(Event().number())
-        +-----+-----+------+--------+-----+----------+
-        | tau | jet | muon | photon | MET | electron |
-        +-----+-----+------+--------+-----+----------+
-        |  0  |  0  |  0   |   0    |  0  |    0     |
-        +-----+-----+------+--------+-----+----------+
+        +------+----------+-----+-----+--------+-----+
+        | muon | electron | jet | tau | photon | MET |
+        +------+----------+-----+-----+--------+-----+
+        |  0   |    0     |  0  |  0  |   0    |  0  |
+        +------+----------+-----+-----+--------+-----+
         """
 
         # Record number of objects in an event and keep total
@@ -621,7 +836,25 @@ class Event(dict):
 
         return number
 
-    def __count_number(self):
+    def count_parsed(self):
+        """
+        Count total number of objects of all types, e.g. electrons.
+
+        Returns:
+        total_number -- An integer, the total number of objects
+
+        >>> print(Event().count_parsed())
+        0
+        """
+
+        # Record number of objects in an event and keep total
+        total_number = 0
+        for objects in self.itervalues():
+            total_number += len(objects)
+
+        return total_number
+
+    def __count_file(self):
         """
         Return number of objects in the event - according to LHCO file, first
         word of the last line.
@@ -629,7 +862,7 @@ class Event(dict):
         Returns:
         number (int) -- Number of events in objects in the event.
         """
-        return int(self._lines[-1].split()[0])
+        return len(self._lines) - 1  # -1 for trigger information
 
     def add_object(self, name, dictionary=None):
         """
@@ -654,30 +887,31 @@ class Event(dict):
         this class itself.
         """
 
-        properties = Object()._properties  # Expected properties of object
-        names = self._names
-
-        for line in self._lines:  # Parse the event line by line
+        # Parse the event line by line as chunks of words
+        for line in self._lines:
 
             words = line.split()
-            number = words[0].strip()  # Number of object in event
+            number = words[0]  # Number of object in event
 
             if number is "0":  # "0" events are trigger information
                 self.trigger_info = map(int, words[1:])
                 continue
 
             try:
-                # Split line into individual properties
+                # Map words to floats
                 values = map(float, words)
+
                 # The first two - # and typ - are integers
                 values[0] = int(values[0])
                 values[1] = int(values[1])
-                index = words[1].strip()  # Index of object in LHCO format
-                name = names[index]  # Name of object, e.g. "electron"
+
+                index = values[1]  # Index of object in LHCO format
+                name = _names_dict[index]  # Name of object, e.g. "electron"
+
                 # Append an Object with the LHCO properties
-                self.add_object(name, zip(properties, values))
+                self.add_object(name, zip(_properties, values))
             except:
-                warnings.warn("Couldn't parse line:\n" + line)
+                warnings.warn("Couldn't parse line")
 
     def __add__(self, other):
         """
@@ -772,187 +1006,9 @@ class Event(dict):
         header = [oo.ljust(10) for oo in header]
         print(*header, file=open(file_name, "a"))
 
-        for name in self._names.itervalues():
+        for name in _names:
             self[name].LHCO(file_name)
 
-###############################################################################
-
-
-class PrintDict(OrderedDict):
-    """
-    An ordinary dictionary with a nice printing function.
-    """
-    def __str__(self):
-        """
-        String the dictionary to an easy to read table.
-        """
-
-        # Make table of dictionary keys and entries
-        table = pt(self.keys())
-        table.add_row(self.values())
-
-        return table.get_string()
-
-###############################################################################
-
-
-class Objects(list):
-    """
-    Objects in an LHCO event of a particular type.
-
-    E.g., a list of all electron objects in an LHCO event. Each indiviudal
-    electron object is an Object class.
-    """
-
-    def order(self, prop):
-        """
-        Order objects by a particular property, e.g. order all jets by
-        transverse momentum, PT.
-
-        The objects are listed in reverse order, biggest to smallest. E.g., if
-        sorted by PT, the hardest jet appears first.
-
-        Arguments:
-        prop -- Property by which to sort objects, e.g. sort by "PT"
-
-        Returns:
-        self - List of objects, now ordered
-        """
-
-        if not self[0].get(prop):
-            warnings.warn("Property not recoginised: " + prop)
-            return
-
-        # Simply sort the list in reverse order, e.g. if sorted by PT,
-        # hardest jet is first
-        self.sort(key=lambda obj: obj[prop], reverse=True)
-
-        return self
-
-    def __str__(self):
-        """
-        String Objects into a nice readable format.
-        """
-
-        # Make table of event
-        headings = ["Object"] + Object()._print_properties
-        table = pt(headings)
-
-        # Add rows to the table
-        for obj in self:
-            table.add_row(obj._row())
-
-        return table.get_string()
-
-    def __add__(self, other):
-        """
-        Add Objects together, returning a new Objects class.
-
-        E.g. you might wish to add "electron" with "muon" to make an Objects
-        class of all leptons.
-
-        >>> e = events[100]
-        >>> e["jet+electron"] = e["jet"] + e["electron"]
-        >>> print(e["jet+electron"])
-        +----------+-------+-------+-------+-------+------+------+-------+
-        |  Object  |  eta  |  phi  |   PT  | jmass | ntrk | btag | hadem |
-        +----------+-------+-------+-------+-------+------+------+-------+
-        |   jet    | 0.434 | 6.161 |  17.5 |  4.12 | 4.0  | 0.0  |  0.57 |
-        |   jet    | 1.011 | 0.196 | 10.71 |  1.63 | 4.0  | 0.0  |  3.64 |
-        |   jet    | 1.409 | 4.841 |  5.11 |  0.53 | 2.0  | 0.0  |  0.3  |
-        | electron | -2.14 | 1.816 | 16.76 |  0.0  | -1.0 | 0.0  |  0.01 |
-        | electron | 1.183 | 4.001 | 15.84 |  0.0  | 1.0  | 0.0  |  0.0  |
-        +----------+-------+-------+-------+-------+------+------+-------+
-        >>> for ii, e in enumerate(events):
-        ...     events[ii]["jet+electron"] = e["jet"] + e["electron"]
-        >>> print(events[0]["jet+electron"])
-        +----------+--------+-------+--------+-------+------+------+-------+
-        |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
-        +----------+--------+-------+--------+-------+------+------+-------+
-        |   jet    | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
-        |   jet    | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
-        |   jet    | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
-        |   jet    | 0.596  | 0.853 | 12.47  |  2.53 | 7.0  | 0.0  |  1.26 |
-        |   jet    | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
-        |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
-        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
-        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
-        +----------+--------+-------+--------+-------+------+------+-------+
-        >>> print(events[0]["jet+electron"].order("PT"))
-        +----------+--------+-------+--------+-------+------+------+-------+
-        |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
-        +----------+--------+-------+--------+-------+------+------+-------+
-        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
-        |   jet    | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
-        |   jet    | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
-        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
-        |   jet    | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
-        |   jet    | 0.596  | 0.853 | 12.47  |  2.53 | 7.0  | 0.0  |  1.26 |
-        |   jet    | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
-        |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
-        +----------+--------+-------+--------+-------+------+------+-------+
-        >>> print(events.number())
-        +------+--------------+-------+------+--------+-------+----------+---------------+--------------+
-        | tau  | jet+electron |  jet  | muon | photon |  MET  | electron | Total objects | Total events |
-        +------+--------------+-------+------+--------+-------+----------+---------------+--------------+
-        | 1512 |    51373     | 33473 |  3   |  1350  | 10000 |  17900   |     115611    |    10000     |
-        +------+--------------+-------+------+--------+-------+----------+---------------+--------------+
-        """
-        combination = Objects(list.__add__(self, other))
-
-        return combination
-
-    def __getslice__(self, i, j):
-        """
-        Slicing returns an Objects class rather than a list.
-
-        >>> print(events[0]["jet"][:2])
-        +--------+--------+-------+--------+-------+------+------+-------+
-        | Object |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
-        +--------+--------+-------+--------+-------+------+------+-------+
-        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
-        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
-        +--------+--------+-------+--------+-------+------+------+-------+
-        """
-        return Objects(list.__getslice__(self, i, j))
-
-    def __mul__(self, other):
-        """
-        Multiplying returns an Objects class rather than a list.
-
-        >>> print(events[0]["jet"][:2] * 5)
-        +--------+--------+-------+--------+-------+------+------+-------+
-        | Object |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
-        +--------+--------+-------+--------+-------+------+------+-------+
-        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
-        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
-        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
-        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
-        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
-        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
-        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
-        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
-        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
-        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
-        +--------+--------+-------+--------+-------+------+------+-------+
-        """
-        return Objects(list.__mul__(self, other))
-
-    def __rmul__(self, other):
-        """ See __mul__. """
-        return self.__mul__(other)
-
-    def LHCO(self, file_name):
-        """
-        Write objects in LHCO format.
-
-        Arguments:
-        file_name -- Name of LHCO file to be written
-        """
-        if self:
-            self.order("PT")
-            for oo in self:
-                oo.LHCO(file_name)
 
 ###############################################################################
 
@@ -984,35 +1040,10 @@ class Object(dict):
         """
 
         # Ordinary initialization
-        if dictionary: 
-            super(self.__class__, self).__init__(dictionary) 
-            
+        if dictionary:
+            super(self.__class__, self).__init__(dictionary)
+
         self.name = name  # Save name of object
-
-        # List of object properties in LHCO file, these are row headings in
-        # LHCO format, see http://madgraph.phys.ucl.ac.be/Manual/lhco.html
-        self._properties = ["event",
-                            "type",
-                            "eta",
-                            "phi",
-                            "PT",
-                            "jmass",
-                            "ntrk",
-                            "btag",
-                            "hadem",
-                            "dummy1",
-                            "dummy2"
-                            ]
-
-        # List of properties suitable for printing
-        self._print_properties = ["eta",
-                                  "phi",
-                                  "PT",
-                                  "jmass",
-                                  "ntrk",
-                                  "btag",
-                                  "hadem"
-                                  ]
 
     def __str__(self):
         """
@@ -1021,8 +1052,7 @@ class Object(dict):
         """
 
         # Make table of event
-        headings = ["Object"] + self._print_properties
-        table = pt(headings)
+        table = pt(_headings)
         table.add_row(self._row())
 
         return table.get_string()
@@ -1036,7 +1066,7 @@ class Object(dict):
         """
 
         row = [self.name]
-        for prop in self._print_properties:
+        for prop in _print_properties:
             row.append(self[prop])
 
         return row
@@ -1077,7 +1107,7 @@ class Object(dict):
         file_name -- Name of LHCO file to be written
         """
         list_ = []
-        for key in self._properties:
+        for key in _properties:
             list_.append(repr(self[key]).ljust(10))
         print(*list_, file=open(file_name, "a"))
 
@@ -1107,6 +1137,8 @@ class Fourvector(np.ndarray):
     +---+-----+-----+-----+
     """
 
+    metric = np.diag([1, -1, -1, -1])  # Define metric
+
     def __new__(self, v=None):
         """
         Make four-vector from Cartesian co-ordinates.
@@ -1118,17 +1150,8 @@ class Fourvector(np.ndarray):
             v = [0] * 4  # Default is empty four-vector
         elif len(v) != 4:
             raise("Four-vector must be length 4!")
-            
+
         return np.asarray(v).view(self)
-
-    def __init__(self, v=None):
-        """
-        Initialize four-vector from Cartesian co-ordinates.
-
-        Arguments:
-        v -- Length 4 list of four-vector in Cartesian co-ordinates
-        """
-        self.metric = np.diag([1, -1, -1, -1])  # Define metric
 
     def __mul__(self, other):
         """
@@ -1320,36 +1343,36 @@ class Fourvector(np.ndarray):
     def gamma(self):
         """
         Find gamma for this four-vector:
-        
+
         gamma = p_0 / abs(p)
-        
+
         Returns:
         gamma -- Lorentz factor for this four-vector.
-        
+
         >>> x = [5,1,0,0]
         >>> p = Fourvector(x)
         >>> print(p.gamma())
         1.02062072616
 
         """
-        
+
         gamma = self[0] / abs(self)  # gamma = E / M
         return gamma
 
     def beta(self):
         """
         Find beta for this four-vector:
-        
+
         Returns:
         beta -- Beta for this four-vector.
-        
+
         >>> x = [5,1,0,0]
         >>> p = Fourvector(x)
         >>> print(p.beta())
         0.2
 
         """
-        
+
         beta = (1. - self.gamma()**-2)**0.5
         return beta
 
@@ -1375,10 +1398,10 @@ class Fourvector(np.ndarray):
     def unit_vector(self):
         """
         Find unit vector in 3-vector direction.
-       
+
         Returns:
         unit -- Unit vector
-        
+
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
         >>> print(p.unit_vector())
