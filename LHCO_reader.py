@@ -263,7 +263,11 @@ class Events(list):
                 else:
                     # If there is not a "0", line belongs to current event,
                     # not a new event - add it to event
-                    event.append(line)
+                    try:
+                        event.append(line)
+                    except:
+                        warnings.warn("Possibly an event did not start with 0")
+                        event = [line]
 
                 # Don't parse more than a particular number of events
                 if n_events and len(self) == n_events:
