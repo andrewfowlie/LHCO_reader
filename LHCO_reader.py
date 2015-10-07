@@ -61,6 +61,9 @@ import sys
 import warnings
 import inspect
 import copy
+import tempfile
+import subprocess
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -68,6 +71,128 @@ from math import pi
 from numpy import cos, sin
 from prettytable import PrettyTable as pt
 from collections import OrderedDict
+
+###############################################################################
+
+try:
+    delphes_path = os.environ["DELPHES"]
+    lhco2root = os.path.join(delphes_path, "lhco2root")
+    root2lhco = os.path.join(delphes_path, "root2lhco")
+except:
+    warnings.warn("Couldn't read $DELPHES bash variable for root2lhco and lhco2root")
+    lhco2root = None
+    root2lhco = None
+
+###############################################################################
+
+
+def _NON_EXISTENT(f_name):
+    """
+    Find a file name that does not exist based on a supplied file name.
+
+    Arguments:
+    f_name -- File name
+
+    Returns:
+    trial_name -- Unique file name, based on f_name
+    """
+    base = os.path.splitext(f_name)[0]
+    extension = os.path.splitext(f_name)[1]
+
+    trial_name = f_name
+    ii = 0
+    while os.path.isfile(trial_name):
+        ii += 1
+        trial_name = base + "_" + str(ii) + extension
+
+    if trial_name != f_name:
+        warnings.warn("Did not overwrite - requested %s changed to %s" %
+                      (f_name, trial_name))
+
+    return trial_name
+
+###############################################################################
+
+
+def _LHCO_ROOT(lhco_name, root_name=None):
+    """
+    Convert a file from LHCO to ROOT. Files won't be
+    overwritten - instead a new unique file name is chosen.
+
+    Arguments:
+    lhco_name -- Name of LHCO file to be read
+    root_name -- Name of ROOT file to be written
+
+    Returns:
+    root_name -- Name of ROOT file created
+
+    """
+
+    # Make non-existent ROOT name
+    if not root_name:
+        root_name = os.path.splitext(lhco_name)[0] + ".root"
+    root_name = _NON_EXISTENT(root_name)
+
+    if not os.path.isfile(lhco2root):
+        raise Exception("Could not find: %s" % lhco2root)
+
+    if not os.path.isfile(lhco_name):
+        raise Exception("Could not find LHCO file: %s" % lhco_name)
+
+    # Convert LHCO to ROOT
+    command = [lhco2root, root_name, lhco_name]
+    process = subprocess.Popen(command, stdout=open(os.devnull, 'w'), stderr=subprocess.PIPE)
+    error = process.communicate()[1]
+
+    if "Error" in error or not os.path.isfile(root_name):
+        raise Exception("Could not convert to ROOT")
+
+    return root_name
+
+###############################################################################
+
+# Functions for calling Delphes conversion programs
+
+###############################################################################
+
+
+def _ROOT_LHCO(root_name, lhco_name=None):
+    """
+    Convert a file from ROOT to LHCO. Files won't be
+    overwritten - instead a new unique file name is chosen.
+
+    Arguments:
+    root_name -- Name of ROOT file to be read
+    lhco_name -- Name of LHCO file to be written
+
+    Returns:
+    lhco_name -- Name of LHCO file created
+
+    """
+    # Make non-existent LHCO name
+    if not lhco_name:
+        lhco_name = os.path.splitext(root_name)[0] + ".lhco"
+    lhco_name = _NON_EXISTENT(lhco_name)
+
+    if not os.path.isfile(root2lhco):
+        raise Exception("Could not find %s" % root2lhco)
+
+    if not os.path.isfile(root_name):
+        raise Exception("Could not find ROOT file %s" % root_name)
+
+    # Convert ROOT to LHCO
+    command = [root2lhco, root_name, lhco_name]
+    process = subprocess.Popen(command, stdout=open(os.devnull, 'w'), stderr=subprocess.PIPE)
+    error = process.communicate()[1]
+
+    if "Error" in error or not os.path.isfile(lhco_name):
+        raise Exception("Could not convert to LHCO")
+
+    return lhco_name
+
+###############################################################################
+
+# Constants for my classes
 
 ###############################################################################
 
@@ -110,6 +235,9 @@ _names = ("photon",
 _names_dict = dict(zip(_numbers, _names))
 _headings = ["Object"] + list(_print_properties)
 _empty_dict = dict.fromkeys(_names)
+
+# Path and suffix for temporary file names
+temp_name = os.path.join(tempfile.gettempdir(), tempfile.gettempprefix())
 
 ###############################################################################
 
@@ -176,13 +304,13 @@ class Events(list):
 
     def __init__(self, f_name=None, list_=None, cut_list=None, n_events=None):
         """
-        Parse an LHCO file into a list of Event objects.
+        Parse an LHCO or ROOT file into a list of Event objects.
 
         It is possible to initialize an Events class without a LHCO file,
         and later append events to the list.
 
         Arguments:
-        f_name -- Name of an LHCO file, including path
+        f_name -- Name of an LHCO or ROOT file, including path
         list_ -- A list for initalizing Events
         cut_list -- Cuts applied to events and their acceptance
         n_events -- Number of events to read from LHCO file
@@ -195,17 +323,30 @@ class Events(list):
         self.f_name = f_name  # Save file name
         self.n_events = n_events  # Save number of events read
 
-        if cut_list:
-            self.cut_list = cut_list  # Save cuts
-        else:
+        # Save cuts
+        self.cut_list = cut_list
+        if not self.cut_list:
             self.cut_list = []
 
         if not self.f_name:
-            warnings.warn("Events class without LHCO file")
+            warnings.warn("Events class without LHCO or ROOT file")
         elif not os.path.isfile(self.f_name):  # Check that file exists
-            raise Exception("File does not exist")
+            raise Exception("File does not exist: %s" % self.f_name)
         else:
+            # Consider file-type - ROOT or LHCO
+            self.f_base = os.path.splitext(self.f_name)[0]
+            self.f_extension = os.path.splitext(self.f_name)[1]
+            self.lhco_name = self.f_base + ".lhco"
+            self.root_name = self.f_base + ".root"
+
+            if self.f_extension == ".root":
+                # Convert ROOT to LHCO file
+                self.lhco_name = _ROOT_LHCO(self.root_name, self.lhco_name)
+            elif self.f_extension != ".lhco":
+                warnings.warn("Unknown file extension: %s" % self.f_name)
+
             self.__parse()  # Parse file
+
             if not len(self):  # Check whether any events were parsed
                 warnings.warn("No events were parsed")
             elif not self.__exp_number():  # Check number of parsed events
@@ -240,8 +381,7 @@ class Events(list):
 
         #event = None  # List of all lines of a single event from LHCO file
         n_events = self.n_events
-
-        with open(self.f_name, 'r') as f:
+        with open(self.lhco_name, 'r') as f:
             for line in f:
 
                 line = line.lstrip()  # Remove leading/trailing spaces
@@ -271,7 +411,7 @@ class Events(list):
 
                 # Don't parse more than a particular number of events
                 if n_events and len(self) == n_events:
-                    warnings.warn("Did not parse all events in file")
+                    warnings.warn("By request, did not parse all events in file")
                     return
 
             # Parse final event in file - because there isn't a following event
@@ -328,7 +468,7 @@ class Events(list):
         exp_events = None
 
         try:
-            with open(self.f_name, 'r') as f:
+            with open(self.lhco_name, 'r') as f:
                 for line in f:
                     if line.strip().startswith("##  Number of Event"):
                         exp_events = int(line.split(":")[1])
@@ -412,13 +552,19 @@ class Events(list):
         +------------------------------------------------+--------------+
         """
 
-        self_org = copy.deepcopy(self)
-        for event in self_org:
+        len_org = len(self)  # Remember original length
+
+        # Loop list in reverse order, removing events if they fail the cut.
+        # Must be reverse order, because otherwise indices are
+        # shifted when events are removed from the list.
+        iterator = reversed(list(enumerate(self)))
+
+        for ii, event in iterator:
             if cut(event):
-                self.remove(event)
+                del self[ii]  # NB del is much faster than remove
 
         # Append information about the cut to events
-        acceptance = len(self) / len(self_org)
+        acceptance = len(self) / len_org
         self.cut_list.append([cut, acceptance])
 
     def column(self, key, prop):
@@ -518,15 +664,20 @@ class Events(list):
         """ See __mul__. """
         return self.__mul__(other)
 
-    def LHCO(self, file_name):
+    def LHCO(self, lhco_name=None, overwrite=False):
         """
-        Write events in LHCO format.
+        Write events in LHCO format. Files won't be
+        overwritten - instead a new unique file name is chosen.
 
         Arguments:
-        file_name -- Name of LHCO file to be written
+        lhco_name -- Name of LHCO file to be written
+        overwrite -- Whether to overwrite existing files
 
-        >>> events[:10].LHCO("test.lhco")
-        >>> same_events = Events("test.lhco")
+        Returns:
+        lhco_name -- Name of LHCO file created
+
+        >>> name = events[:10].LHCO("test.lhco")
+        >>> same_events = Events(name)
         >>> print(events[1])
         +----------+--------+-------+-------+-------+------+------+-------+
         |  Object  |  eta   |  phi  |   PT  | jmass | ntrk | btag | hadem |
@@ -549,15 +700,63 @@ class Events(list):
         +----------+--------+-------+-------+-------+------+------+-------+
         """
 
+        if not lhco_name:
+            lhco_name = self.lhco_name
+
+        # Make non-existent LHCO name
+        if not overwrite:
+            lhco_name = _NON_EXISTENT(lhco_name)
+
         preamble = """LHCO file created with LHCO_reader (https://github.com/innisfree/LHCO_reader).
 See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHCO format."""
-        print(comment(preamble), file=open(file_name, "w"), end="\n\n")
-        print(comment(self), file=open(file_name, "a"), end="\n\n")
+        print(comment(preamble), file=open(lhco_name, "w"), end="\n\n")
+        print(comment(self), file=open(lhco_name, "a"), end="\n\n")
 
         for nn, event in enumerate(self):
-            print("# Event number:", nn, file=open(file_name, "a"))
-            event.LHCO(file_name)
+            print("# Event number:", nn, file=open(lhco_name, "a"))
+            event.LHCO(lhco_name)
 
+        return lhco_name
+
+    def ROOT(self, root_name=None):
+        """
+        Write events in root format. Files won't be
+        overwritten - instead a new unique file name is chosen.
+
+        Arguments:
+        lhco_name -- Name of LHCO file to be written
+
+        Returns:
+        root_name -- Name of ROOT file created
+
+        >>> root_name = events.ROOT("events.root")
+        >>> root_events = Events(root_name)
+        >>> print(events.number())
+        +------+----------+-------+------+--------+-------+---------------+--------------+
+        | muon | electron |  jet  | tau  | photon |  MET  | Total objects | Total events |
+        +------+----------+-------+------+--------+-------+---------------+--------------+
+        |  3   |  17900   | 33473 | 1512 |  1350  | 10000 |     64238     |    10000     |
+        +------+----------+-------+------+--------+-------+---------------+--------------+
+        >>> print(root_events.number())
+        +------+----------+-------+------+--------+-------+---------------+--------------+
+        | muon | electron |  jet  | tau  | photon |  MET  | Total objects | Total events |
+        +------+----------+-------+------+--------+-------+---------------+--------------+
+        |  3   |  17900   | 33473 | 1512 |  1350  | 10000 |     64238     |    10000     |
+        +------+----------+-------+------+--------+-------+---------------+--------------+
+        """
+
+        # Make a temporary LHCO file if necessary
+        try:
+            lhco_name = self.LHCO(self.lhco_name)
+        except:
+            lhco_name = self.LHCO(temp_name, overwrite=True)
+
+        # Convert LHCO to ROOT
+        root_name = _LHCO_ROOT(lhco_name, root_name)
+        if not os.path.isfile(root_name):
+            raise Exception("Could not convert to ROOT")
+
+        return root_name
 
 ###############################################################################
 
@@ -604,7 +803,7 @@ class Objects(list):
         """
 
         if not self[0].get(prop):
-            warnings.warn("Property not recoginised: " + prop)
+            warnings.warn("Property not recoginised: %s" % prop)
             return
 
         # Simply sort the list in reverse order, e.g. if sorted by PT,
@@ -801,7 +1000,7 @@ class Event(dict):
             self.__parse()  # Parse the event
             # Check whether agrees with LHCO file
             if self.__count_file() != self.count_parsed():
-                warnings.warn("Inconsistent numbers of objects in event:\n" + str(self))
+                warnings.warn("Inconsistent numbers of objects in event:\n %s" % str(self))
         else:
             warnings.warn("Adding empty event")
 
@@ -998,7 +1197,10 @@ class Event(dict):
         file_name -- Name of LHCO file to be written
         """
 
-        print(comment(self), file=open(file_name, "a"))
+        # Potentially useful in some circumstances to print
+        # information in readable format. But generally slow and
+        # makes big files.
+        # print(comment(self), file=open(file_name, "a"))
 
         header = ["#", "number", "trig word"]
         header = [oo.ljust(10) for oo in header]
@@ -1183,7 +1385,7 @@ class Fourvector(np.ndarray):
             return Fourvector(prod)
 
         else:
-            raise Exception("Unsupported multiplication: " + type(other))
+            raise Exception("Unsupported multiplication: %s" % type(other))
 
     def __rmul__(self, other):
         """ Four-vector multiplication. See __mul__. """
@@ -1201,7 +1403,7 @@ class Fourvector(np.ndarray):
         -2.0
         """
         if not power == 2:
-            raise Exception("Only power 2 is supported: " + power)
+            raise Exception("Only power 2 is supported: %i" % power)
 
         return self.__mul__(self)
 
