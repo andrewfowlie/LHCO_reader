@@ -3,7 +3,7 @@ LHCO_reader
 
 LHCO_reader is a Python module for reading [LHCO files](http://madgraph.phys.ucl.ac.be/Manual/lhco.html) from detector simulators such as [PGS](http://www.physics.ucdavis.edu/~conway/research/software/pgs/pgs4-general.htm) into a Python class, with useful functions for implementing an analysis. The module does not require installation. 
 
-ROOT files can be converted into LHCO files with `root2lhco` in [Delphes](https://cp3.irmp.ucl.ac.be/projects/delphes).
+ROOT files can be converted into LHCO files with `root2lhco` in [Delphes](https://cp3.irmp.ucl.ac.be/projects/delphes), which can be linked with LHO_reader, i.e. you can load a ROOT file, which will be immediately converted into an LHCO file and parsed.
 
 To load the module and look at an LHCO file, simply
 
