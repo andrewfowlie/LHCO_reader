@@ -209,10 +209,10 @@ class Events(list):
         if not self.description and f_name:
             self.description = f_name
 
-        # Find/make LHCO file and parse
+        # Find/make and parse LHCO file
+        self.LHCO_name = None
         if not f_name:
             warnings.warn("Events class without a LHCO or ROOT file")
-            self.LHCO_name = None
         elif not os.path.isfile(f_name):  # Check that file exists
             raise Exception("File does not exist: %s" % f_name)
         else:
@@ -227,8 +227,8 @@ class Events(list):
             elif f_extension == ".lhco":
                 self.LHCO_name = f_name
             else:
-                warnings.warn("Unknown file extension: %s" % f_name)
-
+                raise Exception("Unknown file extension: %s" % f_name)
+                
             self.__parse()  # Parse file
 
             if not len(self):  # Check whether any events were parsed
