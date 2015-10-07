@@ -217,13 +217,11 @@ class Events(list):
             raise Exception("File does not exist: %s" % f_name)
         else:
             # Consider file-type - ROOT or LHCO
-            f_base = os.path.splitext(f_name)[0]
             f_extension = os.path.splitext(f_name)[1]
-
             if f_extension == ".root":
                 # Convert ROOT to LHCO file
                 import LHCO_converter
-                self.LHCO_name = LHCO_converter.ROOT_LHCO(f_name, f_base + ".lhco")
+                self.LHCO_name = LHCO_converter.ROOT_LHCO(f_name)
             elif f_extension == ".lhco":
                 self.LHCO_name = f_name
             else:
@@ -548,17 +546,18 @@ class Events(list):
         """ See __mul__. """
         return self.__mul__(other)
 
-    def LHCO(self, LHCO_name):
+    def LHCO(self, LHCO_name, over_write=False):
         """
-        Write events in LHCO format. Files could be overwritten.
+        Write events in LHCO format. Files should be overwritten.
 
         Arguments:
         LHCO_name -- Name of LHCO file to be written
+        over_write -- Whether to over-write an existing file
 
         Returns:
         LHCO_name -- Name of LHCO file written
 
-        >>> f_name = events[:10].LHCO("test.lhco")
+        >>> f_name = events[:10].LHCO("events.lhco", over_write=True)
         >>> same_events = Events(f_name)
         >>> print(events[1])
         +----------+--------+-------+-------+-------+------+------+-------+
@@ -581,7 +580,9 @@ class Events(list):
         |   MET    |  0.0   | 5.378 |  9.6  |  0.0  | 0.0  | 0.0  |  0.0  |
         +----------+--------+-------+-------+-------+------+------+-------+
         """
-
+        if os.path.isfile(LHCO_name) and not over_write:
+            raise Exception("Cannot overwrite %s" % LHCO_name)
+        
         preamble = """LHCO file created with LHCO_reader (https://github.com/innisfree/LHCO_reader).
 See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHCO format."""
         print(comment(preamble), file=open(LHCO_name, "w"), end="\n\n")
@@ -604,7 +605,7 @@ See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHC
         Returns:
         ROOT_name -- Name of ROOT file written
 
-        >>> ROOT_name = events.ROOT("events.root")
+        >>> ROOT_name = events.ROOT("ROOT_events.root")
         >>> ROOT_events = Events(ROOT_name)
         >>> print(events.number())
         +------+----------+-------+------+--------+-------+---------------+--------------+
@@ -621,7 +622,7 @@ See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHC
         """
 
         # Make an LHCO file
-        LHCO_name = self.LHCO("LHO_reader.lhco")
+        LHCO_name = self.LHCO(".LHCO_reader.lhco", over_write=True)
 
         # Convert LHCO to ROOT
         import LHCO_converter
