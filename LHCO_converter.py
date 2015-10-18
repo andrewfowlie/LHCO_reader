@@ -3,11 +3,16 @@ from __future__ import print_function
 from __future__ import division
 
 """
+==============
+LHCO_converter
+==============
 
-Convert LHCO and ROOT files. You must
+Convert `LHCO <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_ and ROOT files. 
 
-export DELPHES=YOUR/PATH/
+.. warning:
+    You must `export DELPHES=YOUR/PATH/` to your `Delphes <https://cp3.irmp.ucl.ac.be/projects/delphes>`_ path.
 
+This module is intended to be be imported by :mod:`LHCO_reader`.
 """
 
 __author__ = "Andrew Fowlie"
@@ -41,13 +46,15 @@ except:
 
 def unique_name(f_name):
     """
-    Find a file name that does not exist based on a supplied file name.
+    Find a file name that does not exist based on a supplied file name::
+    
+        unique_name("what_if_this_exists.txt")
+    
+    :param f_name: File name
+    :type f_name: string
 
-    Arguments:
-    f_name -- File name
-
-    Returns:
-    trial_name -- Unique file name, based on f_name
+    :returns: Unique file name, based on f_name
+    :rtype: string
     """
     base = os.path.splitext(f_name)[0]
     extension = os.path.splitext(f_name)[1]
@@ -68,15 +75,23 @@ def unique_name(f_name):
 
 def LHCO_ROOT(LHCO_name, ROOT_name=None):
     """
-    Convert a file from LHCO to ROOT. Files won't be
-    overwritten - instead a new unique file-name is chosen.
+    Convert a file from LHCO to ROOT::
+    
+        LHCO_ROOT("my_LHCO_file.lhco", "my_new_ROOT_file.root")
+    
+    If no ROOT_name is supplied, a name based on LHCO_name is chosen.
 
-    Arguments:
-    LHCO_name -- Name of LHCO file to be read
-    ROOT_name -- Name of ROOT file to be written
+    .. warning::
+        By default, files *should not* be overwritten -
+        instead a new unique file-name is chosen.  
 
-    Returns:
-    ROOT_name -- Name of ROOT file written
+    :param LHCO_name: Name of LHCO file to be read
+    :type LHCO_name: string
+    :param ROOT_name: Name of ROOT file to be written
+    :type ROOT_name: string
+
+    :returns: Name of ROOT file written
+    :rtype: string
     """
     # Make non-existent ROOT name
     if not ROOT_name:
@@ -101,15 +116,23 @@ def LHCO_ROOT(LHCO_name, ROOT_name=None):
 
 def ROOT_LHCO(ROOT_name, LHCO_name=None):
     """
-    Convert a file from ROOT to LHCO. Files won't be
-    overwritten - instead a new unique file-name is chosen.
+    Convert a file from ROOT to LHCO::
+    
+        ROOT_LHCO("my_ROOT_file.root", "my_new_LHCO_file.lhco")
+    
+    If no ROOT_name is supplied, a name based on LHCO_name is chosen.  
+    
+    .. warning::
+        By default, files *should not* be overwritten -
+        instead a new unique file-name is chosen.
 
-    Arguments:
-    ROOT_name -- Name of ROOT file to be read
-    LHCO_name -- Name of LHCO file to be written
+    :param ROOT_name: Name of ROOT file to be read
+    :type ROOT_name: string
+    :param LHCO_name: Name of LHCO file to be written
+    :type LHCO_name: string
 
-    Returns:
-    LHCO_name -- Name of LHCO file written
+    :returns: Name of LHCO file written
+    :rtype: string
     """
     # Make non-existent LHCO name
     if not LHCO_name:

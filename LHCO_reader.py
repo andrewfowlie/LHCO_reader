@@ -3,34 +3,50 @@ from __future__ import print_function
 from __future__ import division
 
 """
-Read an LHCO file, from e.g. PGS, into a convenient format of classes.
+============
+Introduction
+============
 
-The code is object-oriented. A LHCO file is parsed into several layers:
-- Events (inherits list): List of events
-- Event (inherits dictionary): Dictionary of objects in an event,
-e.g. "electron"
-- Objects (inherits list): List of objects of a particular type in an event,
-e.g. list of electrons
-- Object (inherits dictionary): Dictionary of properties of an object,
-e.g. an electron's transverse momentum
+Read an `LHCO <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_ 
+(or ROOT) file, from e.g. `PGS <http://www.physics.ucdavis.edu/~conway/research/software/pgs/pgs4-general.htm>`_
+or `Delphes <https://cp3.irmp.ucl.ac.be/projects/delphes>`_ 
+into convenient Python classes.
 
-Simple usage is e.g.
+The code is object-oriented. A LHCO file is parsed into several objects:
 
->>> events = Events("example.lhco")
->>> print(events[11]["electron"][0]["PT"])
-49.07
+- :class:`Events` (inherits the list class): List of events
+- :class:`Event` (inherits the dictionary class): Dictionary of objects in an event, e.g. "electron"
+- :class:`Objects` (inherits the list class): List of objects of a particular type in an event, e.g. list of electrons
+- :class:`Object` (inherits the dictionary class): Dictionary of properties of an object, e.g. an electron's transverse momentum
+
+============
+Simple usage
+============
+
+Simple usage is e.g::
+
+    events = Events("example.lhco")  # Load "example.lhco" LHCO file
+    print(events[11]["electron"][0]["PT"])  # Print transverse momentum
 
 that code loads an LHCO file, and prints the transverse momentum of the first
-electron in the eleventh event. The object keys are
+electron in the eleventh event. 
+
+===============
+Dictionary keys
+===============
+
+The :class:`Event` dictionary's keys are
+
 - electron
 - muon
 - tau
 - jet
-- MET
+- MET (missing transerse energy)
 - photon
 
-The property keys from the LHCO file are
-- event
+The :class:`Object` dictionary's keys from the LHCO file are
+
+- event 
 - type
 - eta
 - phi
@@ -39,9 +55,10 @@ The property keys from the LHCO file are
 - ntrk
 - btag
 - hadem
-These properties are floats.
 
-We add an additional property, a function, vector(), which returns a
+event and type are integers, and other properties are floats.
+
+We add various additional properties, including a function :func:`vector()`, which returns a
 four-momentum object.
 """
 
@@ -124,11 +141,14 @@ _empty_dict = dict.fromkeys(_names)
 
 class Events(list):
     """
-    All events in LHCO file as a list of "Event" objects.
+    Contains all events in an LHCO file as a list of :class:`Event` objects.
 
-    Functions to parse an LHCO file into a list of "Event" objects. This class
-    inherits the list class; it is itself a list with an integer index. Each
-    entry in the list is an event. Simple usuage e.g.
+    Includes functions to parse an LHCO file into a list of :class:`Event` objects. 
+    
+    Inherits the list class; it is itself a list with an integer index. Each
+    entry in the list is an :class:`Event`. Simple usuage e.g.
+
+    :Example:
 
     >>> events=Events("example.lhco")
     >>> print(events)
@@ -137,8 +157,10 @@ class Events(list):
     |   Description    | example.lhco |
     +------------------+--------------+
 
-    Each list entry is itself an Event class - a class designed to store
+    Each list entry is itself an :class:`Event` class - a class designed to store
     a single event.
+
+    :Example:
 
     >>> print(events[100])
     +----------+-------+-------+-------+-------+------+------+-------+
@@ -179,17 +201,25 @@ class Events(list):
 
     def __init__(self, f_name=None, list_=None, cut_list=None, n_events=None, description=None):
         """
-        Parse an LHCO or ROOT file into a list of Event objects.
+        Parse an LHCO or ROOT file into a list of :class:`Event` objects.
 
-        It is possible to initialize an Events class without a LHCO file,
-        and later append events to the list.
+        It is possible to initialize an :class:`Events` class without a LHCO  or a 
+        ROOT file, and later append events to the list.
+        
+        .. warning::
+            Parsing a ROOT file requires 
+            (and attempts to import) :mod:`LHCO_converter`.  
 
-        Arguments:
-        f_name -- Name of an LHCO or ROOT file, including path
-        list_ -- A list for initalizing Events
-        cut_list -- Cuts applied to events and their acceptance
-        n_events -- Number of events to read from LHCO file
-        description -- Information about events
+        :param f_name: Name of an LHCO or ROOT file, including path
+        :type f_name: str
+        :param list_: A list for initalizing events
+        :type list_: list
+        :param cut_list: Cuts applied to events and their acceptance
+        :type cut_list: list
+        :param n_events: Number of events to read from LHCO file
+        :type n_events: int
+        :param description: Information about events
+        :type description: string
         """
 
         # Ordinary initialization
@@ -238,24 +268,25 @@ class Events(list):
 
     def add_event(self, event):
         """
-        Add an Event object to the Events class.
+        Add an :class:`Event` object built from LHCO data to 
+        the :class:`Events` class, i.e. append the :class:`Events` list with 
+        a new :class:`Event` object.
 
-        Append the Events list with a new Event object.
-
-        Arguments:
-        event -- List of lines in LHCO file for event
+        :param event: List of lines in LHCO file for event
+        :type event: :class:`Event`
         """
         self.append(Event(event))
 
     def __parse(self):
         """
-        Parse an LHCO file into individual Event objects.
+        Parse an LHCO file into individual :class:`Event` objects.
 
         Our strategy is to loop over file, line by line, and split the
         file into indiviual events. A new event begins with a "0" and ends
         an exising event.
 
-        LHCO format - http://madgraph.phys.ucl.ac.be/Manual/lhco.html
+        To read about the LHCO format, see
+        `here <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_
 
         This attribute is intended to be private - i.e. only called from within
         this class itself.
@@ -307,9 +338,10 @@ class Events(list):
 
         Store the information in a dictionary.
 
-        Returns:
-        number -- Dictionary of numbers of each object, indexed by e.g.
-        "electron"
+        :returns: Dictionary of numbers of each object, indexed by e.g. "electron"
+        :rtype: dict
+
+        :Example:
 
         >>> print(events.number())
         +------+----------+-------+------+--------+-------+---------------+--------------+
@@ -337,13 +369,14 @@ class Events(list):
         """
         Returns expected number of events in LHCO file.
 
-        Number of events written in the LHCO file, as "##  Number of Event : ".
+        Number of events written in the LHCO file, as "##  Number of Event : "
+        or as "# | Number of events |"
 
         This attribute is intended to be private - i.e. only called from within
         this class itself.
 
-        Returns:
-        exp_events -- Number of events expected in LHCO file
+        :returns: Number of events expected in LHCO file
+        :rtype: int
         """
 
         # Read expected number of events from LHCO file
@@ -365,10 +398,12 @@ class Events(list):
 
     def __add__(self, other):
         """
-        Combine Event classes.
+        Combine :class:`Event` classes.
 
-        "Add" two Event classes together, making a new Event class with all the
-        events from each Event class.
+        "Add" two :class:`Event` classes together, making a new :class:`Event` class with all the
+        events from each :class:`Event` class.
+
+        :Example:
 
         >>> events + events
         +------------------+-------+
@@ -387,11 +422,13 @@ class Events(list):
 
     def __str__(self):
         """
-        String an Events class.
+        Make a string of an :class:`Events` class.
 
-        Rather than attempting to print thousands of events, print summary
+        Rather than attempting to return thousands of events, return summary
         information about set of events.
 
+        :Example:
+        
         >>> print(events)
         +------------------+--------------+
         | Number of events |    10000     |
@@ -410,18 +447,22 @@ class Events(list):
 
     def __repr__(self):
         """
-        Represent object as a brief description.
-
-        Representation of such a big list is anyway unreadable.
+        Represent object as a brief description. Representation of such a 
+        big list is anyway unreadable. See :func:`__str__`.        
         """
         return self.__str__()
 
     def cut(self, cut):
         """
-        Apply a cut.
+        Apply a cut, i.e. remove events that fail a test.
+        
+        The cut should be a function that takes event as an argument, 
+        and returns True or False. If True, the event is removed.
 
-        Arguments:
-        cut -- Cut to apply to events
+        :param cut: Cut to apply to events
+        :type cut: function
+
+        :Example:
 
         >>> events = Events("example.lhco")
         >>> tau = lambda event: event.number()["tau"] == 1
@@ -451,15 +492,17 @@ class Events(list):
 
     def column(self, key, prop):
         """
-        Make a list of all e.g. electron's transverse momentum.
+        Make a list of all e.g. electron's transverse momentum::
+        
+            events.column("electron", "PT")
 
-        Arguments:
-        key -- Type of object, e.g. electron
-        prop -- Property of object, e.g. PT, transverse
-        momentum
+        :param key: Type of object, e.g. electron
+        :type key: string
+        :param prop: Property of object, e.g. PT, transverse momentum
+        :type prop: string
 
-        Returns:
-        column -- List of all e.g. electron's PT
+        :returns: List of all e.g. electron's PT
+        :rtype: list    
         """
 
         # Make a list of the desired property
@@ -472,14 +515,16 @@ class Events(list):
         """
         Find mean of e.g. electron's transverse momentum.
 
-        Arguments:
-        key -- Type of object, e.g. electron
-        prop -- Property of object, e.g. PT, transverse
-        momentum
+        :param key: Type of object, e.g. electron
+        :type key: string
+        :param prop: Property of object, e.g. PT, transverse momentum
+        :type prop: string
 
-        Returns:
-        mean -- Mean of e.g. electron's PT
+        :returns: Mean of e.g. electron's PT
+        :rtype: float
 
+        :Example:        
+        
         >>> events.mean("electron", "PT")
         123.39502178770948
         """
@@ -491,15 +536,20 @@ class Events(list):
         """
         Show a 1-dimensional histogram of an object's property.
 
-        Plot basic histogram with matplotlib. with crude titles and axis
+        Plot basic histogram with matplotlib with crude titles and axis
         labels. The histogram is normalised to one.
 
-        Arguments:
-        key -- Type of object, e.g. electron
-        prop -- Property of object for histogram, e.g. PT, transverse
-        momentum
+        :param key: Type of object, e.g. electron
+        :type key: string
+        :param prop: Property of object, e.g. PT, transverse momentum
+        :type prop: string
+
+        :Example:
 
         >>> events.plot("electron", "PT")
+        
+        .. figure::  plot.png
+            :align:   center
         """
         data = self.column(key, prop)  # Make data into a column
 
@@ -517,7 +567,10 @@ class Events(list):
 
     def __getslice__(self, i, j):
         """
-        Slicing returns an Events class rather than a list.
+        Slicing an :class:`Events` class  returns another `Events`` class 
+        rather than a list.
+        
+        :Example:
 
         >>> print(events[:100])
         +------------------+--------------------------------+
@@ -531,7 +584,11 @@ class Events(list):
 
     def __mul__(self, other):
         """
-        Multiplying returns an Events class rather than a list.
+        Multiplying an :class:`Events` class returns another :class:`Events` class 
+        rather than a list.
+        
+        :Example:
+        
         >>> print(events * 5)
         +------------------+--------------------------+
         | Number of events |          50000           |
@@ -543,19 +600,25 @@ class Events(list):
         return events
 
     def __rmul__(self, other):
-        """ See __mul__. """
+        """ See :func:`__mul__`. """
         return self.__mul__(other)
 
     def LHCO(self, LHCO_name, over_write=False):
         """
-        Write events in LHCO format. Files should be overwritten.
+        Write events in LHCO format. 
+        
+        .. warning::
+            By default, files *should not* be overwritten.
 
-        Arguments:
-        LHCO_name -- Name of LHCO file to be written
-        over_write -- Whether to over-write an existing file
+        :param LHCO_name: Name of LHCO file to be written
+        :type LHCO_name: string
+        :param over_write: Whether to over-write an existing file
+        :type over_write: bool
 
-        Returns:
-        LHCO_name -- Name of LHCO file written
+        :returns: Name of LHCO file written
+        :rtype: string
+        
+        :Example:
 
         >>> f_name = events[:10].LHCO("events.lhco", over_write=True)
         >>> same_events = Events(f_name)
@@ -596,14 +659,22 @@ See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHC
 
     def ROOT(self, ROOT_name):
         """
-        Write events in root format. Files won't be
-        overwritten - instead a new unique file name is chosen.
+        Write events in root format. 
+        
+        .. warning::
+            Files *should not* be overwritten instead a new 
+            unique file name is chosen.
+            
+         .. warning::
+            Requires (and attempts to import) :mod:`LHCO_converter`.        
 
-        Arguments:
-        LHCO_name -- Name of LHCO file to be written
+        :param ROOT_name: Name of LHCO file to be written
+        :type ROOT_name: string
 
-        Returns:
-        ROOT_name -- Name of ROOT file written
+        :returns: Name of ROOT file written
+        :rtype: string
+
+        :Example:
 
         >>> ROOT_name = events.ROOT("ROOT_events.root")
         >>> ROOT_events = Events(ROOT_name)
@@ -641,7 +712,7 @@ class PrintDict(OrderedDict):
     """
     def __str__(self):
         """
-        String the dictionary to an easy to read table.
+        Make an easy to read table of the dictionary contents.
         """
 
         # Make table of dictionary keys and entries
@@ -658,7 +729,7 @@ class Objects(list):
     Objects in an LHCO event of a particular type.
 
     E.g., a list of all electron objects in an LHCO event. Each indiviudal
-    electron object is an Object class.
+    electron object is an :class:`Object` class.
     """
 
     def order(self, prop):
@@ -666,14 +737,16 @@ class Objects(list):
         Order objects by a particular property, e.g. order all jets by
         transverse momentum, PT.
 
-        The objects are listed in reverse order, biggest to smallest. E.g., if
+        The objects are listed in *reverse* order, biggest to smallest. E.g., if
         sorted by PT, the hardest jet appears first.
+        
+        Sorting is in place *and* a sorted list is returned.
 
-        Arguments:
-        prop -- Property by which to sort objects, e.g. sort by "PT"
+        :param prop: Property by which to sort objects, e.g. sort by "PT"
+        :type prop: string
 
-        Returns:
-        self - List of objects, now ordered
+        :returns: List of objects, now ordered
+        :rtype: :class:`Objects`
         """
 
         if not self[0].get(prop):
@@ -688,7 +761,7 @@ class Objects(list):
 
     def __str__(self):
         """
-        String Objects into a nice readable format.
+        Return a nice readable table format.
         """
 
         # Make table of event
@@ -702,10 +775,12 @@ class Objects(list):
 
     def __add__(self, other):
         """
-        Add Objects together, returning a new Objects class.
+        Add :class:`Objects` together, returning a new :class:`Objects` class.
 
         E.g. you might wish to add "electron" with "muon" to make an Objects
         class of all leptons.
+
+        :Example:
 
         >>> e = events[100]
         >>> e["jet+electron"] = e["jet"] + e["electron"]
@@ -760,7 +835,9 @@ class Objects(list):
 
     def __getslice__(self, i, j):
         """
-        Slicing returns an Objects class rather than a list.
+        Slicing returns another :class:`Objects` rather than a list.
+
+        :Example:
 
         >>> print(events[0]["jet"][:2])
         +--------+--------+-------+--------+-------+------+------+-------+
@@ -774,7 +851,9 @@ class Objects(list):
 
     def __mul__(self, other):
         """
-        Multiplying returns an Objects class rather than a list.
+        Multiplying returns another :class:`Objects` class rather than a list.
+        
+        :Example:
 
         >>> print(events[0]["jet"][:2] * 5)
         +--------+--------+-------+--------+-------+------+------+-------+
@@ -795,15 +874,15 @@ class Objects(list):
         return Objects(list.__mul__(self, other))
 
     def __rmul__(self, other):
-        """ See __mul__. """
+        """ See :func:`__mul__`. """
         return self.__mul__(other)
 
     def LHCO(self, file_name):
         """
         Write objects in LHCO format.
 
-        Arguments:
-        file_name -- Name of LHCO file to be written
+        :param file_name:  Name of LHCO file to be written
+        :type file_name: string
         """
         if self:
             self.order("PT")
@@ -818,11 +897,12 @@ class Event(dict):
     """
     A single LHCO event.
 
-    Parse a list of lines of a single LHCO event from an LHCO file into a
-    single Event class. This class inherits the dictionary class - it is itself
-    a dictionary with keys.
-
-    Dictionary keys are objects that might be in an event, e.g.
+    Includes functions to parse a list of lines of a single LHCO event from an 
+    LHCO file into an :class:`Event` class. 
+    
+    This class inherits the dictionary class - it is itself a dictionary with 
+    keys. Dictionary keys are objects that might be in an event, e.g.
+    
     - photon
     - electron
     - muon
@@ -830,24 +910,35 @@ class Event(dict):
     - jet
     - MET
 
-    Each dicionary entry is iteself an Objects class - a class designed for a
+    Each dicionary entry is iteself an :class:`Objects` class - a class designed for a
     list of objects, e.g. all electrons in an event.
+    
+    :Example:
 
-    >>> print(Event()["electron"])
-    +--------+-----+-----+----+-------+------+------+-------+
-    | Object | eta | phi | PT | jmass | ntrk | btag | hadem |
-    +--------+-----+-----+----+-------+------+------+-------+
-    +--------+-----+-----+----+-------+------+------+-------+
+    >>> print(events[0]) 
+    +----------+--------+-------+--------+-------+------+------+-------+
+    |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+    +----------+--------+-------+--------+-------+------+------+-------+
+    | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
+    | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
+    |   jet    | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+    |   jet    | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+    |   jet    | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
+    |   jet    | 0.596  | 0.853 | 12.47  |  2.53 | 7.0  | 0.0  |  1.26 |
+    |   jet    | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
+    |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
+    |   MET    |  0.0   | 2.695 | 21.43  |  0.0  | 0.0  | 0.0  |  0.0  |
+    +----------+--------+-------+--------+-------+------+------+-------+
     """
 
     def __init__(self, lines=None, dictionary=None, trigger_info=None):
         """
-        Parse a string from an LHCO file into a single event.
-
-        Arguments:
-        lines -- List of lines of LHCO event from an LHCO file
-        dictionary -- Dictionary or zipped lists for new dictionary
-        trigger_info -- Tuple of event number and trigger word value
+        :param lines: List of lines of LHCO event from an LHCO file
+        :type lines: list
+        :param dictionary: Dictionary or zipped lists for new dictionary
+        :type dictionary: dict
+        :param trigger_info: Tuple of event number and trigger word value
+        :type trigger_info: tuple
         """
 
         if lines and dictionary:
@@ -879,7 +970,7 @@ class Event(dict):
 
     def __str__(self):
         """
-        String an event into a nice readable format.
+        Make a nice readable table format.
         """
 
         # Make table of event
@@ -896,14 +987,16 @@ class Event(dict):
         """
         Count objects of each type, e.g. electron.
 
-        Returns:
-        number -- A dictionary of the numbers of objects of each type
+        :return: A dictionary of the numbers of objects of each type
+        :rtype: dict
+        
+        :Example:
 
-        >>> print(Event().number())
+        >>> print(events[0].number())
         +------+----------+-----+-----+--------+-----+
         | muon | electron | jet | tau | photon | MET |
         +------+----------+-----+-----+--------+-----+
-        |  0   |    0     |  0  |  0  |   0    |  0  |
+        |  0   |    2     |  6  |  0  |   0    |  1  |
         +------+----------+-----+-----+--------+-----+
         """
 
@@ -918,8 +1011,10 @@ class Event(dict):
         """
         Count total number of objects of all types, e.g. electrons.
 
-        Returns:
-        total_number -- An integer, the total number of objects
+        :returns: The total number of objects
+        :rype: int
+
+        :Example:
 
         >>> print(Event().count_parsed())
         0
@@ -934,32 +1029,34 @@ class Event(dict):
 
     def __count_file(self):
         """
-        Return number of objects in the event - according to LHCO file, first
-        word of the last line.
+        Return number of objects in the event according to LHCO file.
+        
+        This attribute is intended to be private - i.e. only called from within
+        this class itself.
 
-        Returns:
-        number (int) -- Number of events in objects in the event.
+        :returns: Number of events in objects in the event
+        :rtype: int
         """
         return len(self._lines) - 1  # -1 for trigger information
 
     def add_object(self, name, dictionary=None):
         """
-        Add an object to the event. Append a list element of Object class.
+        Add an object to the event. Append a list element of :class:`Object` class.
 
-        Arguments:
-        name -- Name of object, e.g. "electron"
-        dictionary --- Dictionary of object properties
+        :param name: Name of object, e.g. "electron"
+        :type name: string
+        :param dictionary: Dictionary of object properties
+        :type dictionary: dict
         """
+        # TO DO what if name not in ordinary keys??
         self[name].append(Object(name, dictionary))
 
     def __parse(self):
         """
         Parse a list of lines of a single LHCO event into an Event object.
 
-        The LHCO format is http://madgraph.phys.ucl.ac.be/Manual/lhco.html
-
-        We ignore the "0" line, which contains trigger information. We save
-        all other information.
+        The LHCO format is described
+        `here <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_.
 
         This attribute is intended to be private - i.e. only called from within
         this class itself.
@@ -993,10 +1090,10 @@ class Event(dict):
 
     def __add__(self, other):
         """
-        Add two events together.
-
-        Adds two events, returning a new Event class with all the e.g.
-        electrons that were in original two events.
+        Add two events together, returning a new :class:`Event` class with all the 
+        e.g. electrons that were in original two events.
+        
+        :Example:
 
         >>> print(events[0] + events[1])
         +----------+--------+-------+--------+-------+------+------+-------+
@@ -1026,7 +1123,13 @@ class Event(dict):
 
     def __mul__(self, other):
         """
-        Multiplying returns an Event class.
+        Multiplying returns an :class:`Event` class.
+        
+        :param other: Number to multiply by
+        :type other: int
+        
+        :Example:
+        
         >>> print(events[0] * 2)
         +----------+--------+-------+--------+-------+------+------+-------+
         |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
@@ -1058,15 +1161,15 @@ class Event(dict):
         return prod
 
     def __rmul__(self, other):
-        """ See __mul__. """
+        """ See :func:`__mul__`. """
         return self.__mul__(other)
 
     def LHCO(self, file_name):
         """
         Write event in LHCO format.
 
-        Arguments:
-        file_name -- Name of LHCO file to be written
+        :param file_name: Name of LHCO file to be written
+        :type file_name: string
         """
 
         # Potentially useful in some circumstances to print
@@ -1099,6 +1202,7 @@ class Object(dict):
 
     This object inherits the dictionary class - it is itself a dictionary. The
     keys correspond to an object's properties:
+    
     - event
     - type
     - eta
@@ -1114,9 +1218,10 @@ class Object(dict):
         """
         Initalize a single object, e.g. a single electron.
 
-        Arguments:
-        name -- name of object, e.g. electron, muon etc.
-        dictionary -- A dictionary, zipped lists etc for a new dictionary
+        :param name: Name of object, e.g. electron, muon etc
+        :type name: string
+        :param dictionary: A dictionary, zipped lists etc for a new dictionary
+        :type dictionary: dict
         """
 
         # Ordinary initialization
@@ -1127,7 +1232,7 @@ class Object(dict):
 
     def __str__(self):
         """
-        String Object, e.g. properties about an electron, into an easy to read
+        Make e.g. properties about an electron into an easy to read table
         format.
         """
 
@@ -1153,14 +1258,12 @@ class Object(dict):
 
     def vector(self):
         """
-        Make a four-momentum vector for this Object.
+        Make a four-momentum vector for this object.
 
-        E.g., an electron's four-momentum from its PT, eta, and phi
-        parameters. The four-momentum is a dictionary entry:
-        - vector
-
-        This attribute is intended to be semi-private - i.e. you are not
-        encouraged to call this function directly.
+        E.g., an electron's four-momentum from its 
+        :math:`P_T, \eta, \phi` parameters.
+        
+        :Example:
 
         >>> electron = Object()
         >>> electron["PT"] = 10
@@ -1183,8 +1286,8 @@ class Object(dict):
         """
         Write object in LHCO format.
 
-        Arguments:
-        file_name -- Name of LHCO file to be written
+        :param file_name: Name of LHCO file to be written
+        :type file_name: string
         """
         list_ = [repr(self[key]).ljust(10) for key in _properties]
         print(*list_, file=open(file_name, "a"))
@@ -1193,11 +1296,22 @@ class Object(dict):
 
 
 class Fourvector(np.ndarray):
-    """
+    r"""
     A four-vector, with relevant addition, multiplication etc. operations.
 
     Builds a four-vector from Cartesian co-ordinates. Defines Minkowski
     product, square, additon of four-vectors.
+    
+    Inherits a numpy array.
+    
+    Four-vector is *contravariant* i.e. 
+    
+    .. math::
+      p^\mu = (E, \vec p)
+      
+      g_{\mu\nu} = \textrm{diag}(1, -1, -1, -1)
+
+    :Example:
 
     >>> x = [1,1,1,1]
     >>> p = Fourvector(x)
@@ -1221,8 +1335,8 @@ class Fourvector(np.ndarray):
         """
         Make four-vector from Cartesian co-ordinates.
 
-        Arguments:
-        v -- Length 4 list of four-vector in Cartesian co-ordinates
+        :param v: Length 4 list of four-vector in Cartesian co-ordinates
+        :type v: list
         """
         if v is None:
             v = [0] * 4  # Default is empty four-vector
@@ -1232,11 +1346,18 @@ class Fourvector(np.ndarray):
         return np.asarray(v).view(self)
 
     def __mul__(self, other):
-        """
+        r"""
         Multiply four-vectors with Minkowski product, returning a scalar.
 
         If one entry is in fact a float or an integer, regular multiplication,
         returning a new four-vector.
+        
+        .. math::
+            x \cdot y = x^\mu y^\nu g_{\mu\nu}
+            
+            n \times x = n \times x^\mu
+
+        :Example:
 
         >>> x = [1,1,1,1]
         >>> p = Fourvector(x)
@@ -1260,14 +1381,23 @@ class Fourvector(np.ndarray):
             raise Exception("Unsupported multiplication: %s" % type(other))
 
     def __rmul__(self, other):
-        """ Four-vector multiplication. See __mul__. """
+        """ Four-vector multiplication. See :func:`__mul__`. """
         return self.__mul__(other)
 
     def __pow__(self, power):
-        """
+        r"""
         Raising a four-vector to a power.
 
-        Only power 2 (Minkowski square) supported.
+        .. warning:: 
+            Only power 2 (Minkowski square) supported.
+        
+        .. math::
+            x^2 = x^\mu x^\nu g_{\mu\nu}
+            
+        :param power: Power to raise 
+        :type power: int
+            
+        :Example:
 
         >>> x = [1,1,1,1]
         >>> p = Fourvector(x)
@@ -1280,7 +1410,7 @@ class Fourvector(np.ndarray):
         return self.__mul__(self)
 
     def __str__(self):
-        """ String a four-vector for nice printing. """
+        """ Make a table of the four-vector for nice printing. """
 
         headings = ["E", "P_x", "P_y", "P_z"]
         table = pt(headings)
@@ -1289,10 +1419,15 @@ class Fourvector(np.ndarray):
         return str(table)
 
     def __abs__(self):
-        """
-        Absolute value of a four-vector.
+        r"""
+        Absolute value of a four-vector:
 
-        The square-root of the Minkowski square.
+        .. math::
+            |x| = \sqrt{x_\mu x^\mu}
+
+        i.e. the square-root of the Minkowski square.
+
+        :Example:
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
@@ -1308,8 +1443,13 @@ class Fourvector(np.ndarray):
         return np.array(np.ndarray.__getslice__(self, other1, other2))
 
     def phi(self):
-        """
-        Find angle phi around beam line.
+        r"""
+        Find angle :math:`\phi` around beam line.
+
+        .. math::
+            \phi = \arctan(p_y/p_x)
+
+        :Example:
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
@@ -1321,8 +1461,14 @@ class Fourvector(np.ndarray):
         return phi
 
     def PT(self):
-        """
-        Return PT - transverse magnitude of vector.
+        r"""
+        Return :math:`P_T` - transverse magnitude of vector.
+        
+        .. math:
+            P_T = \sqrt{p_x^2 + p_y^2}
+        
+        :Example:
+        
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
         >>> print(p.PT())
@@ -1331,8 +1477,13 @@ class Fourvector(np.ndarray):
         return (self[1]**2 + self[2]**2)**0.5
 
     def theta(self):
-        """
-        Find angle theta between vector and beam line.
+        r"""
+        Find angle math: `\theta` between vector and beam line.
+
+        .. math::
+            \theta = \arctan(r/z)
+
+        :Example:
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
@@ -1348,8 +1499,13 @@ class Fourvector(np.ndarray):
         return theta
 
     def eta(self):
-        """
+        r"""
         Find pseudo-rapidity.
+        
+        .. math::
+            \eta = -\ln(\tan\theta/2)
+
+        :Example:
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
@@ -1361,14 +1517,19 @@ class Fourvector(np.ndarray):
         return eta
 
     def boost(self, beta):
-        """
+        r"""
         Boost four-vector into a new refrence-frame.
+        
+        .. math::
+            x^\prime = \Lambda(\beta) x
 
-        Arguments:
-        beta -- Numpy array of beta for boost (b1, b2, b3)
+        :param beta: Numpy array of :math:`\vec\beta` for boost
+        :type beta: np.array
 
-        Returns:
-        boosted -- Fourvector class, self but boosted by beta
+        :returns: Fourvector class, self but boosted by beta
+        :rtype: :class:`Fourvector`
+        
+        :Example:
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
@@ -1419,13 +1580,16 @@ class Fourvector(np.ndarray):
         return Fourvector(primed)
 
     def gamma(self):
-        """
-        Find gamma for this four-vector:
+        r"""
+        Find Lorentz factor :math:`\gamma` for this four-vector:
 
-        gamma = p_0 / abs(p)
+        .. math::
+          \gamma = p_0 / |p|
 
-        Returns:
-        gamma -- Lorentz factor for this four-vector.
+        :returns: Lorentz factor for this four-vector
+        :rtype: float
+        
+        :Example:
 
         >>> x = [5,1,0,0]
         >>> p = Fourvector(x)
@@ -1438,11 +1602,13 @@ class Fourvector(np.ndarray):
         return gamma
 
     def beta(self):
-        """
-        Find beta for this four-vector:
+        r"""
+        Find :math:`\beta = v / c` for this four-vector:
 
-        Returns:
-        beta -- Beta for this four-vector.
+        :returns: :math:`\beta` for this four-vector.
+        :rtype: float
+
+        :Example:
 
         >>> x = [5,1,0,0]
         >>> p = Fourvector(x)
@@ -1455,12 +1621,17 @@ class Fourvector(np.ndarray):
         return beta
 
     def beta_rest(self):
-        """
-        Find beta for Lorentz boost to a frame in which this four-vector is at
+        r"""
+        Find :math:`\vec\beta` for Lorentz boost to a frame in which this four-vector is at
         rest.
+        
+        .. math::
+            \vec\beta = \vec v / c
 
-        Returns:
-        beta -- Numpy array of beta (b1, b2, b3)
+        :returns: :math:`\vec\beta` as numpy array, i.e. :math:`(\beta_x, \beta_y, \beta_z)`
+        :rtype: numpy.array 
+
+        :Example:
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
@@ -1474,11 +1645,16 @@ class Fourvector(np.ndarray):
         return beta
 
     def unit_vector(self):
-        """
+        r"""
         Find unit vector in 3-vector direction.
+        
+        .. math::
+            \hat v = \vec v / |\vec v|
 
-        Returns:
-        unit -- Unit vector
+        :returns: Unit vector
+        :rtype: numpy.array
+
+        :Example:
 
         >>> x = [5,1,1,1]
         >>> p = Fourvector(x)
@@ -1492,19 +1668,33 @@ class Fourvector(np.ndarray):
 
 
 def Fourvector_eta(PT, eta, phi, mass=0.):
-    """
-    Builds a four-vector from p, eta, phi co-ordinates.
+    r"""
+    Builds a four-vector from :math:`p, \eta, \phi` co-ordinates.
+    
+    .. math::
+          \theta = 2 \arctan\exp(-\eta))
+          
+          p = P_T / \sin\theta
+          
+          E = \sqrt{p^2 + m^2}
+          
+          v = (E, p\sin\theta\cos\phi, p\sin\theta\sin\phi, p\cos\theta)
 
     Convention is that z-direction is the beam line.
 
-    Arguments:
-    PT -- transverse momentum
-    eta -- pseudo-rapidity, -ln[tan(theta/2)], with theta angle to beam axis
-    phi -- azimuthal angle, angle around beam
-    mass -- mass of particle
+    :param PT: Transverse momentum, math: `P_T`
+    :type PT: float
+    :param eta: Pseudo-rapidity, :math:`\eta = -\ln[\tan(\theta/2)]`, with theta angle to beam axis
+    :type eta: float
+    :param phi: Azimuthal angle math: `\phi`, angle around beam
+    :type phi: float
+    :param mass: Mass of particle
+    :type mass: float
 
-    Returns:
-    Fourvector -- Four-vector object
+    :returns: Four-vector object
+    :rtype: :class:`Fourvector`
+    
+    :Example:
 
     >>> eta = 1.
     >>> phi = 1.
@@ -1542,15 +1732,21 @@ def Fourvector_eta(PT, eta, phi, mass=0.):
 
 
 def delta_R(o1, o2):
-    """
+    r"""
     Find the angular separation between two objects.
 
-    Arguments:
-    o1 -- An Object, e.g. an electron
-    o2 -- Second Object, e.g. jet
+    .. math::
+        \Delta R = \sqrt{\Delta \phi^2 + \Delta \eta^2}
 
-    Returns:
-    delta_R -- Angular separation between objects
+    :param o1: An Object, e.g. an electron
+    :type o1: :class:`Object`
+    :param o2: Second Object, e.g. jet
+    :type o2: :class:`Object`
+
+    :returns: Angular separation between objects, :math:`\Delta R`
+    :rtype: float
+    
+    :Example:
 
     >>> delta_R_12 = delta_R(events[0]["jet"][1], events[0]["jet"][2])
     >>> print(delta_R_12)
@@ -1565,12 +1761,14 @@ def delta_R(o1, o2):
 
 def comment(x):
     """
-    Places # at the beginning of every line in a string or an object to be
+    Places "#" at the beginning of every line in a string or an object to be
     represented as a string.
 
-    Arguments:
-    x -- string to be commented
-
+    :param x: String to be commented
+    :type x: string
+    
+    :returns: Commented string
+    :rtype: string
     """
     return "# " + str(x).replace("\n", "\n# ")
 
