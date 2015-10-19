@@ -37,24 +37,24 @@ Dictionary keys
 
 The :class:`Event` dictionary's keys are
 
-- electron
-- muon
-- tau
-- jet
-- MET (missing transerse energy)
-- photon
+- :literal:`electron`
+- :literal:`muon`
+- :literal:`tau`
+- :literal:`jet`
+- :literal:`MET` (missing transerse energy)
+- :literal:`photon`
 
 The :class:`Object` dictionary's keys from the LHCO file are
 
-- event 
-- type
-- eta
-- phi
-- PT
-- jmass
-- ntrk
-- btag
-- hadem
+- :literal:`event` 
+- :literal:`type`
+- :literal:`eta`
+- :literal:`phi`
+- :literal:`PT`
+- :literal:`jmass`
+- :literal:`ntrk`
+- :literal:`btag`
+- :literal:`hadem`
 
 event and type are integers, and other properties are floats.
 
@@ -903,12 +903,12 @@ class Event(dict):
     This class inherits the dictionary class - it is itself a dictionary with 
     keys. Dictionary keys are objects that might be in an event, e.g.
     
-    - photon
-    - electron
-    - muon
-    - tau
-    - jet
-    - MET
+    - :literal:`photon`
+    - :literal:`electron`
+    - :literal:`muon`
+    - :literal:`tau`
+    - :literal:`jet`
+    - :literal:`MET`
 
     Each dicionary entry is iteself an :class:`Objects` class - a class designed for a
     list of objects, e.g. all electrons in an event.
@@ -1048,7 +1048,6 @@ class Event(dict):
         :param dictionary: Dictionary of object properties
         :type dictionary: dict
         """
-        # TO DO what if name not in ordinary keys??
         self[name].append(Object(name, dictionary))
 
     def __parse(self):
@@ -1203,22 +1202,22 @@ class Object(dict):
     This object inherits the dictionary class - it is itself a dictionary. The
     keys correspond to an object's properties:
     
-    - event
-    - type
-    - eta
-    - phi
-    - PT
-    - jmass
-    - ntrk
-    - btag
-    - hadem
+    - :literal:`event`
+    - :literal:`type`
+    - :literal:`eta`
+    - :literal:`phi`
+    - :literal:`PT`
+    - :literal:`jmass`
+    - :literal:`ntrk`
+    - :literal:`btag`
+    - :literal:`hadem`
     """
 
     def __init__(self, name=None, dictionary=None):
         """
         Initalize a single object, e.g. a single electron.
 
-        :param name: Name of object, e.g. electron, muon etc
+        :param name: Name of object, e.g. :literal:`electron`, :literal:``muon` etc
         :type name: string
         :param dictionary: A dictionary, zipped lists etc for a new dictionary
         :type dictionary: dict
