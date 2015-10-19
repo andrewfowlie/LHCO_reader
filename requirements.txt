@@ -1,7 +1,6 @@
 matplotlib.pyplot
 subprocess
 os
-warnings
 __future__
 sys
 warnings
