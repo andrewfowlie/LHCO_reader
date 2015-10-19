@@ -290,5 +290,5 @@ texinfo_documents = [
 import sys
 import mock
 
-MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 'LHCO_converter', 'freetype', 'png']
+MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 'LHCO_converter', 'numpy', 'scipy']
 sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
