@@ -9,7 +9,13 @@ Introduction
 Getting started
 ===============
 
-The module does not require installation. To load the module :mod:`LHCO_reader` and look at an LHCO file, simply::
+The module does not require installation; simply clone the module::
+
+    git clone https://github.com/innisfree/LHCO_reader.git
+
+or `download it via a web browser <https://github.com/innisfree/LHCO_reader/archive/master.zip>`_.
+
+To load the module :mod:`LHCO_reader` and look at an LHCO file, simply::
 
     import LHCO_reader
     events = LHCO_reader.Events(f_name="example.lhco")
