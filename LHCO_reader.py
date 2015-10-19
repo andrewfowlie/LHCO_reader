@@ -146,7 +146,7 @@ class Events(list):
     Includes functions to parse an LHCO file into a list of :class:`Event` objects. 
     
     Inherits the list class; it is itself a list with an integer index. Each
-    entry in the list is an :class:`Event`. Simple usuage e.g.
+    entry in the list is an :class:`Event`. Simple usage e.g.
 
     :Example:
 
@@ -212,7 +212,7 @@ class Events(list):
 
         :param f_name: Name of an LHCO or ROOT file, including path
         :type f_name: str
-        :param list_: A list for initalizing events
+        :param list_: A list for initializing events
         :type list_: list
         :param cut_list: Cuts applied to events and their acceptance
         :type cut_list: list
@@ -282,8 +282,8 @@ class Events(list):
         Parse an LHCO file into individual :class:`Event` objects.
 
         Our strategy is to loop over file, line by line, and split the
-        file into indiviual events. A new event begins with a "0" and ends
-        an exising event.
+        file into individual events. A new event begins with a :literal:`0`
+        and ends an existing event.
 
         To read about the LHCO format, see
         `here <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_
@@ -369,8 +369,8 @@ class Events(list):
         """
         Returns expected number of events in LHCO file.
 
-        Number of events written in the LHCO file, as "##  Number of Event : "
-        or as "# | Number of events |"
+        Number of events written in the LHCO file, as :literal:`##  Number of Event :`
+        or as :literal:`# | Number of events |`.
 
         This attribute is intended to be private - i.e. only called from within
         this class itself.
@@ -457,7 +457,7 @@ class Events(list):
         Apply a cut, i.e. remove events that fail a test.
         
         The cut should be a function that takes event as an argument, 
-        and returns True or False. If True, the event is removed.
+        and returns `True` or `False`. If `True`, the event is removed.
 
         :param cut: Cut to apply to events
         :type cut: function
@@ -492,16 +492,16 @@ class Events(list):
 
     def column(self, key, prop):
         """
-        Make a list of all e.g. electron's transverse momentum::
+        Make a list of all e.g. electron's transverse momentum, :math:`P_T`::
         
             events.column("electron", "PT")
 
-        :param key: Type of object, e.g. electron
+        :param key: Type of object, e.g. :literal:`electron`
         :type key: string
-        :param prop: Property of object, e.g. PT, transverse momentum
+        :param prop: Property of object, e.g. :literal:`PT`, transverse momentum
         :type prop: string
 
-        :returns: List of all e.g. electron's PT
+        :returns: List of all e.g. electron's :math:`P_T`
         :rtype: list    
         """
 
@@ -515,12 +515,12 @@ class Events(list):
         """
         Find mean of e.g. electron's transverse momentum.
 
-        :param key: Type of object, e.g. electron
+        :param key: Type of object, e.g. :literal:`electron`
         :type key: string
-        :param prop: Property of object, e.g. PT, transverse momentum
+        :param prop: Property of object, e.g. :literal:`PT`, transverse momentum
         :type prop: string
 
-        :returns: Mean of e.g. electron's PT
+        :returns: Mean of e.g. electron's :math:`P_T`
         :rtype: float
 
         :Example:        
@@ -539,9 +539,9 @@ class Events(list):
         Plot basic histogram with matplotlib with crude titles and axis
         labels. The histogram is normalised to one.
 
-        :param key: Type of object, e.g. electron
+        :param key: Type of object, e.g. :literal:`electron`
         :type key: string
-        :param prop: Property of object, e.g. PT, transverse momentum
+        :param prop: Property of object, e.g. :literal:`PT`, transverse momentum
         :type prop: string
 
         :Example:
@@ -567,7 +567,7 @@ class Events(list):
 
     def __getslice__(self, i, j):
         """
-        Slicing an :class:`Events` class  returns another `Events`` class 
+        Slicing an :class:`Events` class  returns another :class:`Events` class 
         rather than a list.
         
         :Example:
@@ -728,21 +728,21 @@ class Objects(list):
     """
     Objects in an LHCO event of a particular type.
 
-    E.g., a list of all electron objects in an LHCO event. Each indiviudal
+    E.g., a list of all electron objects in an LHCO event. Each individual
     electron object is an :class:`Object` class.
     """
 
     def order(self, prop):
         """
         Order objects by a particular property, e.g. order all jets by
-        transverse momentum, PT.
+        transverse momentum :math:`P_T`, :literal:`PT`.
 
         The objects are listed in *reverse* order, biggest to smallest. E.g., if
-        sorted by PT, the hardest jet appears first.
+        sorted by :math:`P_T`, the hardest jet appears first.
         
         Sorting is in place *and* a sorted list is returned.
 
-        :param prop: Property by which to sort objects, e.g. sort by "PT"
+        :param prop: Property by which to sort objects, e.g. sort by :literal:`PT`
         :type prop: string
 
         :returns: List of objects, now ordered
@@ -777,8 +777,8 @@ class Objects(list):
         """
         Add :class:`Objects` together, returning a new :class:`Objects` class.
 
-        E.g. you might wish to add "electron" with "muon" to make an Objects
-        class of all leptons.
+        E.g. you might wish to add :literal:`electron` with :literal:`muon` to 
+        make an :class:`Objects` class of all leptons.
 
         :Example:
 
@@ -910,7 +910,7 @@ class Event(dict):
     - :literal:`jet`
     - :literal:`MET`
 
-    Each dicionary entry is iteself an :class:`Objects` class - a class designed for a
+    Each dictionary entry is itself an :class:`Objects` class - a class designed for a
     list of objects, e.g. all electrons in an event.
     
     :Example:
@@ -955,7 +955,7 @@ class Event(dict):
         self.trigger_info = trigger_info
 
         # Build a dictionary of objects appearing in the event,
-        # e.g. self["electron"] is initalized to be an empty Objects class
+        # e.g. self["electron"] is initialized to be an empty Objects class
         for name in _names:
             self[name] = Objects()  # List of e.g. "electron"s in event
 
@@ -985,7 +985,7 @@ class Event(dict):
 
     def number(self):
         """
-        Count objects of each type, e.g. electron.
+        Count objects of each type, e.g. :literal:`electron`.
 
         :return: A dictionary of the numbers of objects of each type
         :rtype: dict
@@ -1012,7 +1012,7 @@ class Event(dict):
         Count total number of objects of all types, e.g. electrons.
 
         :returns: The total number of objects
-        :rype: int
+        :rtype: int
 
         :Example:
 
@@ -1043,7 +1043,7 @@ class Event(dict):
         """
         Add an object to the event. Append a list element of :class:`Object` class.
 
-        :param name: Name of object, e.g. "electron"
+        :param name: Name of object, e.g. :literal:`electron`
         :type name: string
         :param dictionary: Dictionary of object properties
         :type dictionary: dict
@@ -1052,7 +1052,7 @@ class Event(dict):
 
     def __parse(self):
         """
-        Parse a list of lines of a single LHCO event into an Event object.
+        Parse a list of lines of a single LHCO event into an :class:`Event` object.
 
         The LHCO format is described
         `here <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_.
@@ -1215,9 +1215,9 @@ class Object(dict):
 
     def __init__(self, name=None, dictionary=None):
         """
-        Initalize a single object, e.g. a single electron.
+        Initialize a single object, e.g. a single electron.
 
-        :param name: Name of object, e.g. :literal:`electron`, :literal:``muon` etc
+        :param name: Name of object, e.g. :literal:`electron`, :literal:`muon` etc
         :type name: string
         :param dictionary: A dictionary, zipped lists etc for a new dictionary
         :type dictionary: dict
@@ -1681,11 +1681,11 @@ def Fourvector_eta(PT, eta, phi, mass=0.):
 
     Convention is that z-direction is the beam line.
 
-    :param PT: Transverse momentum, math: `P_T`
+    :param PT: Transverse momentum, :math:`P_T`
     :type PT: float
     :param eta: Pseudo-rapidity, :math:`\eta = -\ln[\tan(\theta/2)]`, with theta angle to beam axis
     :type eta: float
-    :param phi: Azimuthal angle math: `\phi`, angle around beam
+    :param phi: Azimuthal angle :math:`\phi`, angle around beam
     :type phi: float
     :param mass: Mass of particle
     :type mass: float
@@ -1760,7 +1760,7 @@ def delta_R(o1, o2):
 
 def comment(x):
     """
-    Places "#" at the beginning of every line in a string or an object to be
+    Places :literal:`#` at the beginning of every line in a string or an object to be
     represented as a string.
 
     :param x: String to be commented
