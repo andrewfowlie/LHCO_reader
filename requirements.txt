@@ -1,4 +1,3 @@
-# matplotlib
 subprocess
 os
 __future__
