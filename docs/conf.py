@@ -295,5 +295,5 @@ class Mock(MagicMock):
     def __getattr__(cls, name):
             return Mock()
 
-MOCK_MODULES = ['numpy', 'scipy', 'matplotlib', 'matplotlib.pyplot', 'scipy.interpolate']
+MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 'LHCO_converter']
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
