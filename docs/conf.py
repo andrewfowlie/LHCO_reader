@@ -288,12 +288,7 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 import sys
-from unittest.mock import MagicMock
-
-class Mock(MagicMock):
-    @classmethod
-    def __getattr__(cls, name):
-            return Mock()
+import mock
 
 MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 'LHCO_converter', 'freetype', 'png']
-sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
