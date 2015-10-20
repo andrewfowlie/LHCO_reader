@@ -19,9 +19,8 @@ __author__ = "Andrew Fowlie"
 __copyright__ = "Copyright 2015"
 __credits__ = ["Luca Marzola"]
 __license__ = "GPL"
-__version__ = "1.0.1"
 __maintainer__ = "Andrew Fowlie"
-__email__ = "andrew.fowlie@monash.edu.au"
+__email__ = "Andrew.Fowlie@Monash.Edu.Au"
 __status__ = "Production"
 
 ###############################################################################
