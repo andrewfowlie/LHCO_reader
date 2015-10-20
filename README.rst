@@ -9,7 +9,11 @@ Introduction
 Getting started
 ===============
 
-The module does not require installation; simply clone the module::
+The module does not require complicated installation. Simply:
+
+    pip install LHCO_reader
+
+or clone the module for the very-latest version::
 
     git clone https://github.com/innisfree/LHCO_reader.git
 
@@ -17,7 +21,7 @@ or `download it via a web browser <https://github.com/innisfree/LHCO_reader/arch
 
 To load the module :mod:`LHCO_reader` and look at an LHCO file, simply::
 
-    import LHCO_reader
+    from LHCO_reader import LHCO_reader
     events = LHCO_reader.Events(f_name="example.lhco")
     print events
 
