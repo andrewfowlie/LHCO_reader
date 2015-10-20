@@ -9,7 +9,7 @@ Introduction
 Getting started
 ===============
 
-The module does not require complicated installation. Simply:
+The module does not require complicated installation. Simply::
 
     pip install LHCO_reader
 
