@@ -341,12 +341,14 @@ class Events(list):
             # the final event won't be parsed as above
             self.add_event(event)
 
-    def number(self):
+    def number(self, antilepton=False):
         """
         Count the total numbers of objects in event, e.g. total number
         of electrons, jets, muons etc.
 
         Store the information in a dictionary.
+
+        :param antilepton: Whether anti-leptons cancel with leptons in sum
 
         :returns: Dictionary of numbers of each object, indexed by e.g.
         :literal:`electron`
@@ -355,21 +357,27 @@ class Events(list):
         :Example:
 
         >>> print(events.number())
-        +------+----------+-------+------+--------+-------+---------------+--------------+
-        | muon | electron |  jet  | tau  | photon |  MET  | Total objects | Total events |
-        +------+----------+-------+------+--------+-------+---------------+--------------+
-        |  3   |  17900   | 33473 | 1512 |  1350  | 10000 |     64238     |    10000     |
-        +------+----------+-------+------+--------+-------+---------------+--------------+
+        +--------+----------+------+------+-------+-------+---------------+--------------+
+        | photon | electron | muon | tau  |  jet  |  MET  | Total objects | Total events |
+        +--------+----------+------+------+-------+-------+---------------+--------------+
+        |  1350  |  17900   |  3   | 1512 | 33473 | 10000 |     64238     |    10000     |
+        +--------+----------+------+------+-------+-------+---------------+--------------+
+        >>> print(events.number(antilepton=True))
+        +--------+----------+------+------+-------+-------+---------------+--------------+
+        | photon | electron | muon | tau  |  jet  |  MET  | Total objects | Total events |
+        +--------+----------+------+------+-------+-------+---------------+--------------+
+        |  1350  |   1842   |  3   | 1512 | 33473 | 10000 |     48180     |    10000     |
+        +--------+----------+------+------+-------+-------+---------------+--------------+
         """
 
         # Increment numbers of objects by looping through events
         number = PrintDict()
+        for name in _names:
+            number[name] = 0
+
         for event in self:
-            for name, objects in event.iteritems():
-                if number.get(name):
-                    number[name] += len(objects)
-                else:
-                    number[name] = len(objects)
+            for name in _names:
+                number[name] += event.number(antilepton=antilepton)[name]
 
         number["Total objects"] = sum(number.values())
         number["Total events"] = len(self)
@@ -765,17 +773,17 @@ See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHC
         >>> ROOT_name = events.ROOT("ROOT_events.root")
         >>> ROOT_events = Events(ROOT_name)
         >>> print(events.number())
-        +------+----------+-------+------+--------+-------+---------------+--------------+
-        | muon | electron |  jet  | tau  | photon |  MET  | Total objects | Total events |
-        +------+----------+-------+------+--------+-------+---------------+--------------+
-        |  3   |  17900   | 33473 | 1512 |  1350  | 10000 |     64238     |    10000     |
-        +------+----------+-------+------+--------+-------+---------------+--------------+
+        +--------+----------+------+------+-------+-------+---------------+--------------+
+        | photon | electron | muon | tau  |  jet  |  MET  | Total objects | Total events |
+        +--------+----------+------+------+-------+-------+---------------+--------------+
+        |  1350  |  17900   |  3   | 1512 | 33473 | 10000 |     64238     |    10000     |
+        +--------+----------+------+------+-------+-------+---------------+--------------+
         >>> print(ROOT_events.number())
-        +------+----------+-------+------+--------+-------+---------------+--------------+
-        | muon | electron |  jet  | tau  | photon |  MET  | Total objects | Total events |
-        +------+----------+-------+------+--------+-------+---------------+--------------+
-        |  3   |  17900   | 33473 | 1512 |  1350  | 10000 |     64238     |    10000     |
-        +------+----------+-------+------+--------+-------+---------------+--------------+
+        +--------+----------+------+------+-------+-------+---------------+--------------+
+        | photon | electron | muon | tau  |  jet  |  MET  | Total objects | Total events |
+        +--------+----------+------+------+-------+-------+---------------+--------------+
+        |  1350  |  17900   |  3   | 1512 | 33473 | 10000 |     64238     |    10000     |
+        +--------+----------+------+------+-------+-------+---------------+--------------+
         """
 
         # Make an LHCO file
@@ -912,11 +920,11 @@ class Objects(list):
         |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
         +----------+--------+-------+--------+-------+------+------+-------+
         >>> print(events.number())
-        +------+----------+-------+------+--------+--------------+-------+---------------+--------------+
-        | muon | electron |  jet  | tau  | photon | jet+electron |  MET  | Total objects | Total events |
-        +------+----------+-------+------+--------+--------------+-------+---------------+--------------+
-        |  3   |  17900   | 33473 | 1512 |  1350  |    51373     | 10000 |     115611    |    10000     |
-        +------+----------+-------+------+--------+--------------+-------+---------------+--------------+
+        +--------+----------+------+------+-------+-------+---------------+--------------+
+        | photon | electron | muon | tau  |  jet  |  MET  | Total objects | Total events |
+        +--------+----------+------+------+-------+-------+---------------+--------------+
+        |  1350  |  17900   |  3   | 1512 | 33473 | 10000 |     64238     |    10000     |
+        +--------+----------+------+------+-------+-------+---------------+--------------+
         """
         combination = Objects(list.__add__(self, other))
 
@@ -1114,27 +1122,62 @@ class Event(dict):
 
         return table.get_string()
 
-    def number(self):
+    def number(self, antilepton=False):
         """
         Count objects of each type, e.g. :literal:`electron`.
+
+        :param antilepton: Whether anti-leptons cancel with leptons in sum
 
         :return: A dictionary of the numbers of objects of each type
         :rtype: dict
 
         :Example:
 
+        >>> print(events[0])
+        +----------+--------+-------+--------+-------+------+------+-------+
+        |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+        +----------+--------+-------+--------+-------+------+------+-------+
+        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
+        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
+        |   jet    | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |   jet    | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |   jet    | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
+        |   jet    | 0.596  | 0.853 | 12.47  |  2.53 | 7.0  | 0.0  |  1.26 |
+        |   jet    | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
+        |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
+        |   MET    |  0.0   | 2.695 | 21.43  |  0.0  | 0.0  | 0.0  |  0.0  |
+        +----------+--------+-------+--------+-------+------+------+-------+
         >>> print(events[0].number())
-        +------+----------+-----+-----+--------+-----+
-        | muon | electron | jet | tau | photon | MET |
-        +------+----------+-----+-----+--------+-----+
-        |  0   |    2     |  6  |  0  |   0    |  1  |
-        +------+----------+-----+-----+--------+-----+
+        +--------+----------+------+-----+-----+-----+
+        | photon | electron | muon | tau | jet | MET |
+        +--------+----------+------+-----+-----+-----+
+        |   0    |    2     |  0   |  0  |  6  |  1  |
+        +--------+----------+------+-----+-----+-----+
+        >>> print(events[0].number(antilepton=True))
+        +--------+----------+------+-----+-----+-----+
+        | photon | electron | muon | tau | jet | MET |
+        +--------+----------+------+-----+-----+-----+
+        |   0    |    0     |  0   |  0  |  6  |  1  |
+        +--------+----------+------+-----+-----+-----+
         """
 
         # Record number of objects in an event and keep total
         number = PrintDict()  # Dictionary class, with printing function
+        for name in _names:
+            number[name] = 0
+
         for name, objects in self.iteritems():
-            number[name] = len(objects)
+
+            if (name is "electron" or name is "muon") and antilepton:
+                # Sum number of leptons, cancelling negative and positive
+                # charged electrons and muons
+                lepton_number = 0
+                for _object in objects:
+                    lepton_number += int(np.sign(_object["ntrk"]))
+                # Add absolute number of leptons
+                number[name] += abs(lepton_number)
+            else:
+                number[name] = len(objects)
 
         return number
 
@@ -1329,6 +1372,50 @@ class Event(dict):
         for name in _names:
             self[name].LHCO(f_name)
 
+    def multiplicity(self, antilepton=False):
+        """
+        Count total number of objects of all types, e.g. electrons,
+        excluding MET.
+
+        :param antilepton: Whether anti-leptons cancel with leptons in sum
+
+        :returns: The total number of objects, excluding MET
+        :rtype: int
+
+        :Example:
+
+        >>> print(events[0].number())
+        +------+----------+-----+-----+--------+-----+
+        | muon | electron | jet | tau | photon | MET |
+        +------+----------+-----+-----+--------+-----+
+        |  0   |    2     |  6  |  0  |   0    |  1  |
+        +------+----------+-----+-----+--------+-----+
+        >>> print(events[0])
+        +----------+--------+-------+--------+-------+------+------+-------+
+        |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+        +----------+--------+-------+--------+-------+------+------+-------+
+        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
+        | electron | -0.073 | 4.681 | 44.56  |  0.0  | 1.0  | 0.0  |  0.0  |
+        |   jet    | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |   jet    | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |   jet    | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
+        |   jet    | 0.596  | 0.853 | 12.47  |  2.53 | 7.0  | 0.0  |  1.26 |
+        |   jet    | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
+        |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
+        |   MET    |  0.0   | 2.695 | 21.43  |  0.0  | 0.0  | 0.0  |  0.0  |
+        +----------+--------+-------+--------+-------+------+------+-------+
+        >>> print(events[0].multiplicity(antilepton=True))
+        6
+        """
+
+        # Record number of objects in an event and keep total
+        multiplicity = 0
+        for name in _names:
+            if name is "MET":
+                continue
+            multiplicity += self.number(antilepton=antilepton)[name]
+
+        return multiplicity
 
 ###############################################################################
 
@@ -1402,7 +1489,6 @@ class Object(dict):
 
         E.g., an electron's four-momentum from its
         :math:`P_T, \eta, \phi` parameters.
-
         :Example:
 
         >>> electron = Object()
