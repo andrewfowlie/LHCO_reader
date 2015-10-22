@@ -7,10 +7,12 @@ from __future__ import division
 LHCO_converter
 ==============
 
-Convert `LHCO <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_ and ROOT files. 
+Convert `LHCO <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_ and ROOT
+files.
 
 .. warning:
-    You must `export DELPHES=YOUR/PATH/` to your `Delphes <https://cp3.irmp.ucl.ac.be/projects/delphes>`_ path.
+    You must `export DELPHES=YOUR/PATH/` to your \
+    `Delphes <https://cp3.irmp.ucl.ac.be/projects/delphes>`_ path.
 
 This module is intended to be be imported by :mod:`LHCO_reader`.
 """
@@ -46,9 +48,9 @@ except:
 def unique_name(f_name):
     """
     Find a file name that does not exist based on a supplied file name::
-    
+
         unique_name("what_if_this_exists.txt")
-    
+
     :param f_name: File name
     :type f_name: string
 
@@ -75,14 +77,14 @@ def unique_name(f_name):
 def LHCO_ROOT(LHCO_name, ROOT_name=None):
     """
     Convert a file from LHCO to ROOT::
-    
+
         LHCO_ROOT("my_LHCO_file.lhco", "my_new_ROOT_file.root")
-    
+
     If no ROOT_name is supplied, a name based on LHCO_name is chosen.
 
     .. warning::
         By default, files *should not* be overwritten -
-        instead a new unique file-name is chosen.  
+        instead a new unique file-name is chosen.
 
     :param LHCO_name: Name of LHCO file to be read
     :type LHCO_name: string
@@ -116,11 +118,11 @@ def LHCO_ROOT(LHCO_name, ROOT_name=None):
 def ROOT_LHCO(ROOT_name, LHCO_name=None):
     """
     Convert a file from ROOT to LHCO::
-    
+
         ROOT_LHCO("my_ROOT_file.root", "my_new_LHCO_file.lhco")
-    
-    If no ROOT_name is supplied, a name based on LHCO_name is chosen.  
-    
+
+    If no ROOT_name is supplied, a name based on LHCO_name is chosen.
+
     .. warning::
         By default, files *should not* be overwritten -
         instead a new unique file-name is chosen.
