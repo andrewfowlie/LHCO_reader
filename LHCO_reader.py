@@ -1385,11 +1385,11 @@ class Event(dict):
         :Example:
 
         >>> print(events[0].number())
-        +------+----------+-----+-----+--------+-----+
-        | muon | electron | jet | tau | photon | MET |
-        +------+----------+-----+-----+--------+-----+
-        |  0   |    2     |  6  |  0  |   0    |  1  |
-        +------+----------+-----+-----+--------+-----+
+        +--------+----------+------+-----+-----+-----+
+        | photon | electron | muon | tau | jet | MET |
+        +--------+----------+------+-----+-----+-----+
+        |   0    |    2     |  0   |  0  |  6  |  1  |
+        +--------+----------+------+-----+-----+-----+
         >>> print(events[0])
         +----------+--------+-------+--------+-------+------+------+-------+
         |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
@@ -1416,6 +1416,117 @@ class Event(dict):
             multiplicity += self.number(antilepton=antilepton)[name]
 
         return multiplicity
+
+    def ET(self):
+        """
+        Calculate the scalar sum of transverse energy in an event:
+
+        .. math::
+            E_T = \sum p_T
+
+        :returns: :math:`E_T`, scalar sum of transverse energy in an event
+        :rtype: float
+
+        :Example:
+
+        >>> print(events[0].ET())
+        661.76
+        """
+
+        ET = 0
+        for name in _names:
+            if name is "MET":
+                continue
+            for _object in self[name]:
+                ET += _object["PT"]
+
+        return ET
+
+    def MET(self, LHCO=False):
+        r"""
+        Calculate the vector sum of transverse energy in an event:
+
+        .. math::
+            MET = |\sum \vec p_T|
+
+        .. warning::
+
+          Detector-simulators compute MET, which is stored in the \
+          LHCO file. That might differ from :math:`|\sum \vec p_T|`.
+
+
+        :param LHCO: Whether to read MET from the LHCO
+        :type MET: bool
+
+        :returns: MET, vector sum of transverse energy in an event
+        :rtype: float
+
+        :Example:
+
+        >>> print(events[0].MET())
+        16.4924225025
+        >>> print(events[0].MET(LHCO=True))
+        21.43
+        """
+
+        if LHCO:
+            MET = self["MET"][0]["PT"]
+        else:
+            MET_vector = Fourvector()
+            for name in _names:
+                if name is "MET":
+                    continue
+                for _object in self[name]:
+                    MET_vector += _object.vector()
+            MET = MET_vector.PT()
+
+        return MET
+
+    def HT(self):
+        """
+        Calculate the scalar sum of transverse energy in jets in an event:
+
+        .. math::
+            H_T = \sum_j p_T
+
+        :returns: :math:`H_T`, scalar sum of transverse energy in jets \
+        in an event
+        :rtype: float
+
+        :Example:
+
+        >>> print(events[0].HT())
+        330.48
+        """
+
+        ET = 0
+        for _object in self["jet"]:
+            ET += _object["PT"]
+
+        return ET
+
+    def MHT(self):
+        r"""
+        Calculate the vector sum of transverse energy in jets in an event:
+
+        .. math::
+            MHT = |\sum_j \vec p_T|
+
+        :returns: MHT, vector sum of transverse energy in jets in an event
+        :rtype: float
+
+        :Example:
+
+        >>> print(events[0].MHT())
+        306.052283115
+        """
+
+        MHT_vector = Fourvector()
+        for _object in self["jet"]:
+            MHT_vector += _object.vector()
+
+        MHT = MHT_vector.PT()
+        return MHT
 
 ###############################################################################
 
