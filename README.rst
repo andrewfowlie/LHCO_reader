@@ -6,6 +6,24 @@ Introduction
 
 :mod:`LHCO_reader` is a Python module for reading `LHCO files <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_ from detector simulators such as `PGS <http://www.physics.ucdavis.edu/~conway/research/software/pgs/pgs4-general.htm>`_ into a Python class, with useful functions for implementing an analysis. It can also read ROOT files from `Delphes <https://cp3.irmp.ucl.ac.be/projects/delphes>`_, by immediately converting them to LHCO files.
 
+For the full documentation, `read the online docs <http://lhco-reader.readthedocs.org/>`_. For a tutorial and further background information, see the manual at `arXiv:1510.07319 <http://arxiv.org/abs/1510.07319>`_.
+
+If you use :mod:`LHCO_reader`, please cite the manual,:: 
+
+    @article{Fowlie:2015dga,
+        author         = "Fowlie, Andrew",
+        title          = "{LHCO_reader: A new code for reading and analyzing
+                        detector-level events stored in LHCO format}",
+        year           = "2015",
+        eprint         = "1510.07319",
+        archivePrefix  = "arXiv",
+        primaryClass   = "hep-ph",
+        reportNumber   = "COEPP-MN-15-10",
+        SLACcitation   = "%%CITATION = ARXIV:1510.07319;%%"
+    }
+    
+Submit any bugs or issues at the `git-hub issues page <https://github.com/innisfree/LHCO_reader/issues>`_.
+
 Getting started
 ===============
 
