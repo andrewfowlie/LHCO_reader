@@ -83,7 +83,6 @@ import inspect
 
 import matplotlib.pyplot as plt
 import numpy as np
-import __main__ as main
 
 from math import pi
 from numpy import cos, sin
@@ -135,9 +134,6 @@ _names = ("photon",
 _names_dict = dict(zip(_numbers, _names))
 _headings = ["Object"] + list(_print_properties)
 _empty_dict = dict.fromkeys(_names)
-
-# Check whether running inside a script
-script = hasattr(main, '__file__')
 
 ###############################################################################
 
@@ -459,19 +455,19 @@ class Events(list):
         |   Description    | example.lhco |
         +------------------+--------------+
         """
-        
+
         table = pt(header=False)
         table.add_row(["Number of events", len(self)])
         table.add_row(["Description", self.description])
         for ii, (cut, acceptance) in enumerate(self.cut_list):
-        
-            # If script, inspect source code
-            if script:
+
+            # Inspect source code
+            try:
                 cut_string = inspect.getsource(cut).strip()
-            else:
-                warnings.warn("Did not inspect source; running interactively")
+            except:
+                warnings.warn("Did not inspect source. Probably running interactively")
                 cut_string = "Cut %s" % ii
-                
+
             table.add_row([cut_string, str(acceptance)])
 
         return table.get_string()
