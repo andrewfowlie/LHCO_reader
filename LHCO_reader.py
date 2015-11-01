@@ -302,7 +302,6 @@ class Events(list):
         this class itself.
         """
 
-        #event = None  # List of all lines of a single event from LHCO file
         n_events = self.n_events
         with open(self.LHCO_name, 'r') as f:
             for line in f:
@@ -426,17 +425,24 @@ class Events(list):
         :Example:
 
         >>> events + events
-        +------------------+-------+
-        | Number of events | 20000 |
-        |   Description    |  None |
-        +------------------+-------+
+        +------------------+-----------------------------+
+        | Number of events |            20000            |
+        |   Description    | example.lhco + example.lhco |
+        +------------------+-----------------------------+
         """
 
         if not isinstance(other, Events):
             raise Exception("Can only add Events with other Events object")
 
+        # Make a description
+        try:
+            d = self.description + " + " + other.description
+        except:
+            warnings.warngin("Couldn't find descriptions")
+            d = None
+
         # New set of events in Events class
-        combined = Events(list_=list.__add__(self, other))
+        combined = Events(list_=list.__add__(self, other), description=d)
 
         return combined
 
@@ -553,6 +559,12 @@ class Events(list):
         |   jet    | 1.449  | 5.194 | 61.81 |  6.15 | 8.0  | 0.0  |  1.47 |
         |   MET    |  0.0   |  1.15 |  8.66 |  0.0  | 0.0  | 0.0  |  0.0  |
         +----------+--------+-------+-------+-------+------+------+-------+
+        >>> print(events)
+        +------------------------------------------+--------------+
+        |             Number of events             |    10000     |
+        |               Description                | example.lhco |
+        | PT = lambda _object: _object["PT"] < 30. |     1.0      |
+        +------------------------------------------+--------------+
         """
 
         if name not in _names:
@@ -561,6 +573,9 @@ class Events(list):
 
         for ii in range(len(self)):
             self[ii][name].cut_objects(cut)
+
+        # Note that objects were cut with 100% efficiency
+        self.cut_list.append([cut, 1.])
 
     def column(self, name, prop):
         """
@@ -763,7 +778,7 @@ See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHC
         Write events in root format.
 
         .. warning::
-            Files *should not* be overwritten instead a new
+            Files *should not* be overwritten instead a new \
             unique file name is chosen.
 
          .. warning::
@@ -1034,7 +1049,6 @@ class Objects(list):
         for ii, _object in iterator:
             if cut(_object):
                 del self[ii]  # NB del is much faster than remove
-
 
 ###############################################################################
 
@@ -1457,13 +1471,12 @@ class Event(dict):
             MET = |\sum \vec p_T|
 
         .. warning::
-
           Detector-simulators compute MET, which is stored in the \
           LHCO file. That might differ from :math:`|\sum \vec p_T|`.
 
 
         :param LHCO: Whether to read MET from the LHCO
-        :type MET: bool
+        :type LHCO: bool
 
         :returns: MET, vector sum of transverse energy in an event
         :rtype: float
