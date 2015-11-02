@@ -465,6 +465,10 @@ class Events(list):
         table = pt(header=False)
         table.add_row(["Number of events", len(self)])
         table.add_row(["Description", self.description])
+
+        # Find combined acceptance of all cuts
+        combined_acceptable = 1.
+
         for ii, (cut, acceptance) in enumerate(self.cut_list):
 
             # Inspect source code
@@ -475,6 +479,11 @@ class Events(list):
                 cut_string = "Cut %s" % ii
 
             table.add_row([cut_string, str(acceptance)])
+            combined_acceptable *= acceptance
+
+        # Add information about combined acceptance
+        if self.cut_list:
+            table.add_row(["Combined acceptance", str(combined_acceptable)])
 
         return table.get_string()
 
@@ -505,10 +514,13 @@ class Events(list):
         |                Number of events                |     8656     |
         |                  Description                   | example.lhco |
         | tau = lambda event: event.number()["tau"] == 1 |    0.8656    |
+        |              Combined acceptance               |    0.8656    |
         +------------------------------------------------+--------------+
         """
 
         len_org = len(self)  # Remember original length
+        if not len_org:
+            raise Exception("No events")
 
         # Loop list in reverse order, removing events if they fail the cut.
         # Must be reverse order, because otherwise indices are
@@ -519,8 +531,12 @@ class Events(list):
             if cut(event):
                 del self[ii]  # NB del is much faster than remove
 
+        len_new = len(self)
+        if not len_org:
+            warnings.warn("All events were cut")
+
         # Append information about the cut to events
-        acceptance = len(self) / len_org
+        acceptance = len_new / len_org
         self.cut_list.append([cut, acceptance])
 
     def cut_objects(self, name, cut):
@@ -564,6 +580,7 @@ class Events(list):
         |             Number of events             |    10000     |
         |               Description                | example.lhco |
         | PT = lambda _object: _object["PT"] < 30. |     1.0      |
+        |           Combined acceptance            |     1.0      |
         +------------------------------------------+--------------+
         """
 
@@ -1101,6 +1118,9 @@ class Event(dict):
         :type trigger_info: tuple
         """
 
+        self._lines = lines  # Save list of lines of whole event
+        self.trigger_info = trigger_info
+
         if lines and dictionary:
             raise("Must specify lines or dictionary")
 
@@ -1110,9 +1130,6 @@ class Event(dict):
             return
         else:
             super(self.__class__, self).__init__(_empty_dict)
-
-        self._lines = lines  # Save list of lines of whole event
-        self.trigger_info = trigger_info
 
         # Build a dictionary of objects appearing in the event,
         # e.g. self["electron"] is initialized to be an empty Objects class
@@ -1380,7 +1397,12 @@ class Event(dict):
         header = [oo.ljust(10) for oo in header]
         print(*header, file=open(f_name, "a"))
 
-        trigger = [0] + self.trigger_info
+        try:
+            trigger = [0] + self.trigger_info
+        except:
+            warnings.warn("Missing trigger information")
+            trigger = [0] * 3
+
         trigger = [repr(oo).ljust(10) for oo in trigger]
         print(*trigger, file=open(f_name, "a"))
 
@@ -1391,7 +1413,10 @@ class Event(dict):
         print(*header, file=open(f_name, "a"))
 
         for name in _names:
-            self[name].LHCO(f_name)
+            try:
+                self[name].LHCO(f_name)
+            except KeyError:
+                warnings.warn("Missing key in events: %s" % name)
 
     def multiplicity(self, antilepton=False):
         """
@@ -1484,7 +1509,7 @@ class Event(dict):
         :Example:
 
         >>> print(events[0].MET())
-        16.4924225025
+        21.363659506
         >>> print(events[0].MET(LHCO=True))
         21.43
         """
@@ -1538,7 +1563,7 @@ class Event(dict):
         :Example:
 
         >>> print(events[0].MHT())
-        306.052283115
+        309.603169784
         """
 
         MHT_vector = Fourvector()
@@ -1686,7 +1711,7 @@ class Fourvector(np.ndarray):
     +---+-----+-----+-----+
     """
 
-    metric = np.diag([1, -1, -1, -1])  # Define metric
+    metric = np.diag([1., -1., -1., -1.])  # Define metric
 
     def __new__(self, v=None):
         """
@@ -1696,7 +1721,7 @@ class Fourvector(np.ndarray):
         :type v: list
         """
         if v is None:
-            v = [0] * 4  # Default is empty four-vector
+            v = [0.] * 4  # Default is empty four-vector
         elif len(v) != 4:
             raise("Four-vector must be length 4!")
 
