@@ -340,16 +340,17 @@ class Events(list):
             # the final event won't be parsed as above
             self.add_event(event)
 
-    def number(self, antilepton=False):
+    def number(self, anti_lepton=False):
         """
-        Count the total numbers of objects in event, e.g. total number
+        Count the total numbers of objects in all events, e.g. total number
         of electrons, jets, muons etc.
 
         Store the information in a dictionary.
 
-        :param antilepton: Whether anti-leptons cancel with leptons in sum
+        :param anti_lepton: Whether anti-leptons treated separately
+        :type anti_lepton: bool
 
-        :returns: Dictionary of numbers of each object, indexed by e.g.
+        :returns: Dictionary of numbers of each object, indexed by e.g. \
         :literal:`electron`
         :rtype: dict
 
@@ -361,22 +362,28 @@ class Events(list):
         +--------+----------+------+------+-------+-------+---------------+--------------+
         |  1350  |  17900   |  3   | 1512 | 33473 | 10000 |     64238     |    10000     |
         +--------+----------+------+------+-------+-------+---------------+--------------+
-        >>> print(events.number(antilepton=True))
-        +--------+----------+------+------+-------+-------+---------------+--------------+
-        | photon | electron | muon | tau  |  jet  |  MET  | Total objects | Total events |
-        +--------+----------+------+------+-------+-------+---------------+--------------+
-        |  1350  |   1842   |  3   | 1512 | 33473 | 10000 |     48180     |    10000     |
-        +--------+----------+------+------+-------+-------+---------------+--------------+
+        >>> print(events.number(anti_lepton=True))
+        +--------+----------+------+------+-------+-------+-----------+---------------+---------------+--------------+
+        | photon | electron | muon | tau  |  jet  |  MET  | anti-muon | anti-electron | Total objects | Total events |
+        +--------+----------+------+------+-------+-------+-----------+---------------+---------------+--------------+
+        |  1350  |   8976   |  2   | 1512 | 33473 | 10000 |     1     |      8924     |     64238     |    10000     |
+        +--------+----------+------+------+-------+-------+-----------+---------------+---------------+--------------+
         """
 
-        # Increment numbers of objects by looping through events
+        # Initalize dictionary for numbers of objects
         number = PrintDict()
-        for name in _names:
+
+        number_names = list(_names)
+        if anti_lepton:
+            number_names += ["anti-muon", "anti-electron"]
+
+        for name in number_names:
             number[name] = 0
 
+        # Find numbers of objects by looping through events
         for event in self:
-            for name in _names:
-                number[name] += event.number(antilepton=antilepton)[name]
+            for name in number_names:
+                number[name] += event.number(anti_lepton=anti_lepton)[name]
 
         number["Total objects"] = sum(number.values())
         number["Total events"] = len(self)
@@ -1067,6 +1074,49 @@ class Objects(list):
             if cut(_object):
                 del self[ii]  # NB del is much faster than remove
 
+    def pick_charge(self, charge):
+        """
+        Make a :class:`Objects` class of particles or anti-particles of same
+        type. E.g. all anti-electrons or electrons in event.
+
+        .. warning::
+            Only applies to leptons, as other events either have no \
+            measured charge or no anti-particles.
+
+        :param charge: Charge of leptons required, e.g. :literal:`-1`
+        :type lepton: integer
+
+        :returns: Particles or anti-particles of the same type
+        :rtype: :class:`Objects` class
+
+        :Example:
+
+        >>> print(events[0]["electron"].pick_charge(-1))
+        +----------+--------+-------+--------+-------+------+------+-------+
+        |  Object  |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+        +----------+--------+-------+--------+-------+------+------+-------+
+        | electron | -0.745 | 4.253 | 286.72 |  0.0  | -1.0 | 0.0  |  0.0  |
+        +----------+--------+-------+--------+-------+------+------+-------+
+        >>> print(events[0]["electron"].pick_charge(+1))
+        +----------+--------+-------+-------+-------+------+------+-------+
+        |  Object  |  eta   |  phi  |   PT  | jmass | ntrk | btag | hadem |
+        +----------+--------+-------+-------+-------+------+------+-------+
+        | electron | -0.073 | 4.681 | 44.56 |  0.0  | 1.0  | 0.0  |  0.0  |
+        +----------+--------+-------+-------+-------+------+------+-------+
+        >>> print(events[0]["jet"].pick_charge(+1))
+        +--------+-----+-----+----+-------+------+------+-------+
+        | Object | eta | phi | PT | jmass | ntrk | btag | hadem |
+        +--------+-----+-----+----+-------+------+------+-------+
+        +--------+-----+-----+----+-------+------+------+-------+
+        """
+
+        _objects = Objects()
+        for _object in self:
+            if _object.charge() == charge:
+                _objects.append(_object)
+
+        return _objects
+
 ###############################################################################
 
 
@@ -1160,11 +1210,12 @@ class Event(dict):
 
         return table.get_string()
 
-    def number(self, antilepton=False):
+    def number(self, anti_lepton=False):
         """
         Count objects of each type, e.g. :literal:`electron`.
 
-        :param antilepton: Whether anti-leptons cancel with leptons in sum
+        :param anti_lepton: Whether anti-leptons treated separately
+        :type anti_lepton: bool
 
         :return: A dictionary of the numbers of objects of each type
         :rtype: dict
@@ -1191,29 +1242,29 @@ class Event(dict):
         +--------+----------+------+-----+-----+-----+
         |   0    |    2     |  0   |  0  |  6  |  1  |
         +--------+----------+------+-----+-----+-----+
-        >>> print(events[0].number(antilepton=True))
-        +--------+----------+------+-----+-----+-----+
-        | photon | electron | muon | tau | jet | MET |
-        +--------+----------+------+-----+-----+-----+
-        |   0    |    0     |  0   |  0  |  6  |  1  |
-        +--------+----------+------+-----+-----+-----+
+        >>> print(events[0].number(anti_lepton=True))
+        +--------+----------+------+-----+-----+-----+-----------+---------------+
+        | photon | electron | muon | tau | jet | MET | anti-muon | anti-electron |
+        +--------+----------+------+-----+-----+-----+-----------+---------------+
+        |   0    |    1     |  0   |  0  |  6  |  1  |     0     |       1       |
+        +--------+----------+------+-----+-----+-----+-----------+---------------+
         """
 
-        # Record number of objects in an event and keep total
         number = PrintDict()  # Dictionary class, with printing function
-        for name in _names:
+
+        number_names = list(_names)
+        if anti_lepton:
+            number_names += ["anti-muon", "anti-electron"]
+
+        for name in number_names:
             number[name] = 0
 
+        # Record number of objects in an event
         for name, objects in self.iteritems():
-
-            if (name is "electron" or name is "muon") and antilepton:
-                # Sum number of leptons, cancelling negative and positive
-                # charged electrons and muons
-                lepton_number = 0
-                for _object in objects:
-                    lepton_number += int(np.sign(_object["ntrk"]))
-                # Add absolute number of leptons
-                number[name] += abs(lepton_number)
+            if name in ["electron", "muon"] and anti_lepton:
+                number[name] = len(objects.pick_charge(-1))
+                anti_name = "anti-" + name
+                number[anti_name] = len(objects.pick_charge(1))
             else:
                 number[name] = len(objects)
 
@@ -1418,12 +1469,10 @@ class Event(dict):
             except KeyError:
                 warnings.warn("Missing key in events: %s" % name)
 
-    def multiplicity(self, antilepton=False):
+    def multiplicity(self):
         """
         Count total number of objects of all types, e.g. electrons,
         excluding MET.
-
-        :param antilepton: Whether anti-leptons cancel with leptons in sum
 
         :returns: The total number of objects, excluding MET
         :rtype: int
@@ -1450,8 +1499,6 @@ class Event(dict):
         |   jet    | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
         |   MET    |  0.0   | 2.695 | 21.43  |  0.0  | 0.0  | 0.0  |  0.0  |
         +----------+--------+-------+--------+-------+------+------+-------+
-        >>> print(events[0].multiplicity(antilepton=True))
-        6
         """
 
         # Record number of objects in an event and keep total
@@ -1459,7 +1506,7 @@ class Event(dict):
         for name in _names:
             if name is "MET":
                 continue
-            multiplicity += self.number(antilepton=antilepton)[name]
+            multiplicity += self.number()[name]
 
         return multiplicity
 
@@ -1673,6 +1720,36 @@ class Object(dict):
         """
         list_ = [repr(self[prop]).ljust(10) for prop in _properties]
         print(*list_, file=open(f_name, "a"))
+
+    def charge(self):
+        """
+        Find charge of object.
+
+        :returns: Charge of object. None if not lepton
+        :rtype: integer
+
+        :Example:
+
+        >>> print(events[10]["electron"])
+        +----------+--------+-------+-------+-------+------+------+-------+
+        |  Object  |  eta   |  phi  |   PT  | jmass | ntrk | btag | hadem |
+        +----------+--------+-------+-------+-------+------+------+-------+
+        | electron | -1.359 | 1.056 | 79.51 |  0.0  | -1.0 | 0.0  |  0.02 |
+        | electron | -0.327 |  2.84 | 26.27 |  0.0  | 1.0  | 0.0  |  0.01 |
+        +----------+--------+-------+-------+-------+------+------+-------+
+        >>> print(events[10]["electron"][0].charge())
+        -1
+        >>> print(events[10]["electron"][1].charge())
+        1
+        >>> print(events[10]["jet"][0].charge())
+        None
+        """
+        if self.name is None:
+            return None
+        if self.name is not "electron" and self.name is not "muon":
+            return None
+        else:
+            return int(np.sign(self["ntrk"]))
 
 ###############################################################################
 
