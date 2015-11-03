@@ -135,6 +135,8 @@ _names_dict = dict(zip(_numbers, _names))
 _headings = ["Object"] + list(_print_properties)
 _empty_dict = dict.fromkeys(_names)
 
+_lepton = ["electron", "mu", "tau"]
+
 ###############################################################################
 
 # Classes for storing LHCO file data
@@ -363,11 +365,11 @@ class Events(list):
         |  1350  |  17900   |  3   | 1512 | 33473 | 10000 |     64238     |    10000     |
         +--------+----------+------+------+-------+-------+---------------+--------------+
         >>> print(events.number(anti_lepton=True))
-        +--------+----------+------+------+-------+-------+-----------+---------------+---------------+--------------+
-        | photon | electron | muon | tau  |  jet  |  MET  | anti-muon | anti-electron | Total objects | Total events |
-        +--------+----------+------+------+-------+-------+-----------+---------------+---------------+--------------+
-        |  1350  |   8976   |  2   | 1512 | 33473 | 10000 |     1     |      8924     |     64238     |    10000     |
-        +--------+----------+------+------+-------+-------+-----------+---------------+---------------+--------------+
+        +--------+----------+------+-----+-------+-------+---------------+---------+----------+---------------+--------------+
+        | photon | electron | muon | tau |  jet  |  MET  | anti-electron | anti-mu | anti-tau | Total objects | Total events |
+        +--------+----------+------+-----+-------+-------+---------------+---------+----------+---------------+--------------+
+        |  1350  |   8976   |  3   | 732 | 33473 | 10000 |      8924     |    0    |   780    |     64238     |    10000     |
+        +--------+----------+------+-----+-------+-------+---------------+---------+----------+---------------+--------------+
         """
 
         # Initalize dictionary for numbers of objects
@@ -375,7 +377,9 @@ class Events(list):
 
         number_names = list(_names)
         if anti_lepton:
-            number_names += ["anti-muon", "anti-electron"]
+            for name in _lepton:
+                anti_name = "anti-" + name
+                number_names.append(anti_name)
 
         for name in number_names:
             number[name] = 0
@@ -1081,8 +1085,8 @@ class Objects(list):
         type. E.g. all anti-electrons or electrons in event.
 
         .. warning::
-            Only applies to leptons, as other events either have no \
-            measured charge or no anti-particles.
+            Only applies to electron, mu and tau, as other objects either \
+            have no measured charge or no anti-particles.
 
         :param charge: Charge of leptons required, e.g. :literal:`-1`
         :type lepton: integer
@@ -1244,25 +1248,27 @@ class Event(dict):
         |   0    |    2     |  0   |  0  |  6  |  1  |
         +--------+----------+------+-----+-----+-----+
         >>> print(events[0].number(anti_lepton=True))
-        +--------+----------+------+-----+-----+-----+-----------+---------------+
-        | photon | electron | muon | tau | jet | MET | anti-muon | anti-electron |
-        +--------+----------+------+-----+-----+-----+-----------+---------------+
-        |   0    |    1     |  0   |  0  |  6  |  1  |     0     |       1       |
-        +--------+----------+------+-----+-----+-----+-----------+---------------+
+        +--------+----------+------+-----+-----+-----+---------------+---------+----------+
+        | photon | electron | muon | tau | jet | MET | anti-electron | anti-mu | anti-tau |
+        +--------+----------+------+-----+-----+-----+---------------+---------+----------+
+        |   0    |    1     |  0   |  0  |  6  |  1  |       1       |    0    |    0     |
+        +--------+----------+------+-----+-----+-----+---------------+---------+----------+
         """
 
         number = PrintDict()  # Dictionary class, with printing function
 
         number_names = list(_names)
         if anti_lepton:
-            number_names += ["anti-muon", "anti-electron"]
+            for name in _lepton:
+                anti_name = "anti-" + name
+                number_names.append(anti_name)
 
         for name in number_names:
             number[name] = 0
 
         # Record number of objects in an event
         for name, objects in self.iteritems():
-            if name in ["electron", "muon"] and anti_lepton:
+            if name in _lepton and anti_lepton:
                 number[name] = len(objects.pick_charge(-1))
                 anti_name = "anti-" + name
                 number[anti_name] = len(objects.pick_charge(1))
@@ -1726,7 +1732,7 @@ class Object(dict):
         """
         Find charge of object.
 
-        :returns: Charge of object. None if not lepton
+        :returns: Charge of object. None if not eletron, mu or tau
         :rtype: integer
 
         :Example:
@@ -1745,9 +1751,11 @@ class Object(dict):
         >>> print(events[10]["jet"][0].charge())
         None
         """
-        if self.name is None:
+        if not self.name:
+            warnings.warn("Cannot find charge of particle with no name")
             return None
-        if self.name is not "electron" and self.name is not "muon":
+        if self.name not in _lepton:
+            warnings.warn("Cannot find charge of particle that is not lepton")
             return None
         else:
             return int(np.sign(self["ntrk"]))
