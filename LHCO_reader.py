@@ -1627,6 +1627,44 @@ class Event(dict):
         MHT = MHT_vector.PT()
         return MHT
 
+    def number_b_jets(self):
+        """
+        Count the number of b-jets in an event.
+
+        :returns: Number of b-jets
+        :rtype: integer
+
+        :Example:
+
+        >>> events[0].number_b_jets()
+        0
+        """
+
+        return len(self.b_jets())
+
+    def b_jets(self):
+        """
+        Find b-jets in an event.
+
+        :returns: b-tagged jets
+        :rtype: :class:`Objects` class of b-tagged jets
+
+        :Example:
+
+        >>> print(events[0].b_jets())
+        +--------+-----+-----+----+-------+------+------+-------+
+        | Object | eta | phi | PT | jmass | ntrk | btag | hadem |
+        +--------+-----+-----+----+-------+------+------+-------+
+        +--------+-----+-----+----+-------+------+------+-------+
+        """
+
+        _objects = Objects()
+        for b in self["jet"]:
+            if b["btag"]:
+                _objects.append(b)
+
+        return _objects
+
 ###############################################################################
 
 
