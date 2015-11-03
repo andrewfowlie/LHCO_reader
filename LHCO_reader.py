@@ -157,8 +157,8 @@ class Events(list):
     >>> events=Events("example.lhco")
     >>> print(events)
     +------------------+--------------+
-    | Number of events |    10000     |
-    |   Description    | example.lhco |
+    | Number of events | 10000        |
+    | Description      | example.lhco |
     +------------------+--------------+
 
     Each list entry is itself an :class:`Event` class - a class designed to
@@ -198,8 +198,8 @@ class Events(list):
     >>> events=Events("example.lhco", n_events=250)
     >>> print(events)
     +------------------+--------------+
-    | Number of events |     250      |
-    |   Description    | example.lhco |
+    | Number of events | 250          |
+    | Description      | example.lhco |
     +------------------+--------------+
     """
 
@@ -433,8 +433,8 @@ class Events(list):
 
         >>> events + events
         +------------------+-----------------------------+
-        | Number of events |            20000            |
-        |   Description    | example.lhco + example.lhco |
+        | Number of events | 20000                       |
+        | Description      | example.lhco + example.lhco |
         +------------------+-----------------------------+
         """
 
@@ -464,8 +464,8 @@ class Events(list):
 
         >>> print(events)
         +------------------+--------------+
-        | Number of events |    10000     |
-        |   Description    | example.lhco |
+        | Number of events | 10000        |
+        | Description      | example.lhco |
         +------------------+--------------+
         """
 
@@ -492,6 +492,7 @@ class Events(list):
         if self.cut_list:
             table.add_row(["Combined acceptance", str(combined_acceptable)])
 
+        table.align = "l"
         return table.get_string()
 
     def __repr__(self):
@@ -518,10 +519,10 @@ class Events(list):
         >>> events.cut(tau)
         >>> print(events)
         +------------------------------------------------+--------------+
-        |                Number of events                |     8656     |
-        |                  Description                   | example.lhco |
-        | tau = lambda event: event.number()["tau"] == 1 |    0.8656    |
-        |              Combined acceptance               |    0.8656    |
+        | Number of events                               | 8656         |
+        | Description                                    | example.lhco |
+        | tau = lambda event: event.number()["tau"] == 1 | 0.8656       |
+        | Combined acceptance                            | 0.8656       |
         +------------------------------------------------+--------------+
         """
 
@@ -584,10 +585,10 @@ class Events(list):
         +----------+--------+-------+-------+-------+------+------+-------+
         >>> print(events)
         +------------------------------------------+--------------+
-        |             Number of events             |    10000     |
-        |               Description                | example.lhco |
-        | PT = lambda _object: _object["PT"] < 30. |     1.0      |
-        |           Combined acceptance            |     1.0      |
+        | Number of events                         | 10000        |
+        | Description                              | example.lhco |
+        | PT = lambda _object: _object["PT"] < 30. | 1.0          |
+        | Combined acceptance                      | 1.0          |
         +------------------------------------------+--------------+
         """
 
@@ -714,8 +715,8 @@ class Events(list):
 
         >>> print(events[:100])
         +------------------+--------------------------------+
-        | Number of events |              100               |
-        |   Description    | Events 0 to 99 in example.lhco |
+        | Number of events | 100                            |
+        | Description      | Events 0 to 99 in example.lhco |
         +------------------+--------------------------------+
         """
         events = Events(list_=list.__getslice__(self, i, j))
@@ -731,8 +732,8 @@ class Events(list):
 
         >>> print(events * 5)
         +------------------+--------------------------+
-        | Number of events |          50000           |
-        |   Description    | 5 copies of example.lhco |
+        | Number of events | 50000                    |
+        | Description      | 5 copies of example.lhco |
         +------------------+--------------------------+
         """
         events = Events(list_=list.__mul__(self, other))
