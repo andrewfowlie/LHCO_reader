@@ -1640,28 +1640,42 @@ class Event(dict):
         0
         """
 
-        return len(self.b_jets())
+        return len(self.pick_b_jets())
 
-    def b_jets(self):
+    def pick_b_jets(self, tagged=True):
         """
         Find b-jets in an event.
+
+        :param tagged: Pick b-jets that were tagged
+        :type tagged: bool
 
         :returns: b-tagged jets
         :rtype: :class:`Objects` class of b-tagged jets
 
         :Example:
 
-        >>> print(events[0].b_jets())
+        >>> print(events[0].pick_b_jets())
         +--------+-----+-----+----+-------+------+------+-------+
         | Object | eta | phi | PT | jmass | ntrk | btag | hadem |
         +--------+-----+-----+----+-------+------+------+-------+
         +--------+-----+-----+----+-------+------+------+-------+
+        >>> print(events[0].pick_b_jets(False))
+        +--------+--------+-------+--------+-------+------+------+-------+
+        | Object |  eta   |  phi  |   PT   | jmass | ntrk | btag | hadem |
+        +--------+--------+-------+--------+-------+------+------+-------+
+        |  jet   | -0.565 | 1.126 | 157.44 | 12.54 | 16.0 | 0.0  |  0.57 |
+        |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
+        |  jet   | 0.811  | 6.028 | 17.49  |  3.47 | 8.0  | 0.0  |  2.37 |
+        |  jet   | 0.596  | 0.853 | 12.47  |  2.53 | 7.0  | 0.0  |  1.26 |
+        |  jet   | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
+        |  jet   | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
+        +--------+--------+-------+--------+-------+------+------+-------+
         """
 
         _objects = Objects()
-        for b in self["jet"]:
-            if b["btag"]:
-                _objects.append(b)
+        for jet in self["jet"]:
+            if jet["btag"] == tagged:
+                _objects.append(jet)
 
         return _objects
 
