@@ -1646,11 +1646,11 @@ class Event(dict):
         """
         Find b-jets in an event.
 
-        :param tagged: Pick b-jets that were tagged
+        :param tagged: Pick b-jets that were tagged or untagged
         :type tagged: bool
 
-        :returns: b-tagged jets
-        :rtype: :class:`Objects` class of b-tagged jets
+        :returns: b-tagged jets (if tagged) or ordinary jets (if not tagged)
+        :rtype: :class:`Objects` class
 
         :Example:
 
