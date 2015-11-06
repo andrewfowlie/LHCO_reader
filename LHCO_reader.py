@@ -97,45 +97,45 @@ from collections import OrderedDict
 
 # Tuple of object properties in LHCO file, these are row headings in
 # LHCO format, see http://madgraph.phys.ucl.ac.be/Manual/lhco.html
-_properties = ("event",
-               "type",
-               "eta",
-               "phi",
-               "PT",
-               "jmass",
-               "ntrk",
-               "btag",
-               "hadem",
-               "dummy1",
-               "dummy2"
-               )
+PROPERTIES = ("event",
+              "type",
+              "eta",
+              "phi",
+              "PT",
+              "jmass",
+              "ntrk",
+              "btag",
+              "hadem",
+              "dummy1",
+              "dummy2"
+              )
 
 # Tuple of properties suitable for printing
-_print_properties = ("eta",
-                     "phi",
-                     "PT",
-                     "jmass",
-                     "ntrk",
-                     "btag",
-                     "hadem"
-                     )
+PRINT_PROPERTIES = ("eta",
+                    "phi",
+                    "PT",
+                    "jmass",
+                    "ntrk",
+                    "btag",
+                    "hadem"
+                    )
 
 # Dictionary of object names that appear in event, index corresponds
 # to the number in the LHCO convention. Dictionary rather than list,
-# because number 5 is missing
-_numbers = (0, 1, 2, 3, 4, 6)
-_names = ("photon",
-          "electron",
-          "muon",
-          "tau",
-          "jet",
-          "MET"
-          )
-_names_dict = dict(zip(_numbers, _names))
-_headings = ["Object"] + list(_print_properties)
-_empty_dict = dict.fromkeys(_names)
+# because number 5 is missing.
+NUMBERS = (0, 1, 2, 3, 4, 6)
+NAMES = ("photon",
+         "electron",
+         "muon",
+         "tau",
+         "jet",
+         "MET"
+         )
+NAMES_DICT = dict(zip(NUMBERS, NAMES))
+HEADINGS = ["Object"] + list(PRINT_PROPERTIES)
+EMPTY_DICT = dict.fromkeys(NAMES)
 
-_lepton = ["electron", "mu", "tau"]
+LEPTON = ["electron", "mu", "tau"]
 
 ###############################################################################
 
@@ -375,9 +375,9 @@ class Events(list):
         # Initalize dictionary for numbers of objects
         number = PrintDict()
 
-        number_names = list(_names)
+        number_names = list(NAMES)
         if anti_lepton:
-            for name in _lepton:
+            for name in LEPTON:
                 anti_name = "anti-" + name
                 number_names.append(anti_name)
 
@@ -575,7 +575,7 @@ class Events(list):
         |   jet    | 1.736  | 0.393 |  8.72 |  1.53 | 7.0  | 0.0  |  1.86 |
         |   MET    |  0.0   |  1.15 |  8.66 |  0.0  | 0.0  | 0.0  |  0.0  |
         +----------+--------+-------+-------+-------+------+------+-------+
-        >>> PT = lambda _object: _object["PT"] < 30.
+        >>> PT = lambda object_: object_["PT"] < 30.
         >>> events.cut_objects("jet", PT)
         >>> print(events[10])
         +----------+--------+-------+-------+-------+------+------+-------+
@@ -591,12 +591,12 @@ class Events(list):
         +------------------------------------------+--------------+
         | Number of events                         | 10000        |
         | Description                              | example.lhco |
-        | PT = lambda _object: _object["PT"] < 30. | 1.0          |
+        | PT = lambda object_: object_["PT"] < 30. | 1.0          |
         | Combined acceptance                      | 1.0          |
         +------------------------------------------+--------------+
         """
 
-        if name not in _names:
+        if name not in NAMES:
             warnings.warn("Name not recoginised: %s" % name)
             return
 
@@ -622,11 +622,11 @@ class Events(list):
         :rtype: list
         """
 
-        if name not in _names:
+        if name not in NAMES:
             warnings.warn("Name not recoginised: %s" % name)
             return
 
-        if prop not in _properties:
+        if prop not in PROPERTIES:
             warnings.warn("Property not recoginised: %s" % prop)
             return
 
@@ -655,11 +655,11 @@ class Events(list):
         123.39502178770948
         """
 
-        if name not in _names:
+        if name not in NAMES:
             warnings.warn("Name not recoginised: %s" % name)
             return
 
-        if prop not in _properties:
+        if prop not in PROPERTIES:
             warnings.warn("Property not recoginised: %s" % prop)
             return
 
@@ -688,11 +688,11 @@ class Events(list):
             :align:   center
         """
 
-        if name not in _names:
+        if name not in NAMES:
             warnings.warn("Name not recoginised: %s" % name)
             return
 
-        if prop not in _properties:
+        if prop not in PROPERTIES:
             warnings.warn("Property not recoginised: %s" % prop)
             return
 
@@ -913,7 +913,7 @@ class Objects(list):
         """
 
         # Make table of event
-        table = pt(_headings)
+        table = pt(HEADINGS)
 
         # Add rows to the table
         for obj in self:
@@ -1060,7 +1060,7 @@ class Objects(list):
         |  jet   | -1.816 | 0.032 |  6.11  |  1.18 | 0.0  | 0.0  |  0.56 |
         |  jet   | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
         +--------+--------+-------+--------+-------+------+------+-------+
-        >>> PT = lambda _object: _object["PT"] < 30.
+        >>> PT = lambda object_: object_["PT"] < 30.
         >>> objects.cut_objects(PT)
         >>> print(objects)
         +--------+--------+-------+--------+-------+------+------+-------+
@@ -1075,8 +1075,8 @@ class Objects(list):
         # shifted when events are removed from the list.
         iterator = reversed(list(enumerate(self)))
 
-        for ii, _object in iterator:
-            if cut(_object):
+        for ii, object_ in iterator:
+            if cut(object_):
                 del self[ii]  # NB del is much faster than remove
 
     def pick_charge(self, charge):
@@ -1115,12 +1115,12 @@ class Objects(list):
         +--------+-----+-----+----+-------+------+------+-------+
         """
 
-        _objects = Objects()
-        for _object in self:
-            if _object.charge() == charge:
-                _objects.append(_object)
+        objects = Objects()
+        for object_ in self:
+            if object_.charge() == charge:
+                objects.append(object_)
 
-        return _objects
+        return objects
 
 ###############################################################################
 
@@ -1184,11 +1184,11 @@ class Event(dict):
             super(self.__class__, self).__init__(dictionary)
             return
         else:
-            super(self.__class__, self).__init__(_empty_dict)
+            super(self.__class__, self).__init__(EMPTY_DICT)
 
         # Build a dictionary of objects appearing in the event,
         # e.g. self["electron"] is initialized to be an empty Objects class
-        for name in _names:
+        for name in NAMES:
             self[name] = Objects()  # List of e.g. "electron"s in event
 
         # Check that it is a non-empty list
@@ -1206,10 +1206,10 @@ class Event(dict):
         """
 
         # Make table of event
-        table = pt(_headings)
+        table = pt(HEADINGS)
 
         # Add rows to the table
-        for name in _names:  # Iterate object types e.g electrons
+        for name in NAMES:  # Iterate object types e.g electrons
             for obj in self[name]:  # Iterate all objects of that type
                 table.add_row(obj._row())
 
@@ -1257,9 +1257,9 @@ class Event(dict):
 
         number = PrintDict()  # Dictionary class, with printing function
 
-        number_names = list(_names)
+        number_names = list(NAMES)
         if anti_lepton:
-            for name in _lepton:
+            for name in LEPTON:
                 anti_name = "anti-" + name
                 number_names.append(anti_name)
 
@@ -1268,7 +1268,7 @@ class Event(dict):
 
         # Record number of objects in an event
         for name, objects in self.iteritems():
-            if name in _lepton and anti_lepton:
+            if name in LEPTON and anti_lepton:
                 number[name] = len(objects.pick_charge(-1))
                 anti_name = "anti-" + name
                 number[anti_name] = len(objects.pick_charge(1))
@@ -1319,7 +1319,7 @@ class Event(dict):
         :param dictionary: Dictionary of object properties
         :type dictionary: dict
         """
-        if name not in _names:
+        if name not in NAMES:
             warnings.warn("Name not recoginised: %s" % name)
 
         self[name].append(Object(name, dictionary))
@@ -1355,10 +1355,10 @@ class Event(dict):
                 values[1] = int(values[1])
 
                 index = values[1]  # Index of object in LHCO format
-                name = _names_dict[index]  # Name of object, e.g. "electron"
+                name = NAMES_DICT[index]  # Name of object, e.g. "electron"
 
                 # Append an Object with the LHCO properties
-                self.add_object(name, zip(_properties, values))
+                self.add_object(name, zip(PROPERTIES, values))
             except:
                 warnings.warn("Couldn't parse line")
 
@@ -1470,7 +1470,7 @@ class Event(dict):
         header = [oo.ljust(10) for oo in header]
         print(*header, file=open(f_name, "a"))
 
-        for name in _names:
+        for name in NAMES:
             try:
                 self[name].LHCO(f_name)
             except KeyError:
@@ -1510,7 +1510,7 @@ class Event(dict):
 
         # Record number of objects in an event and keep total
         multiplicity = 0
-        for name in _names:
+        for name in NAMES:
             if name is "MET":
                 continue
             multiplicity += self.number()[name]
@@ -1533,12 +1533,12 @@ class Event(dict):
         661.76
         """
 
-        ET = 0
-        for name in _names:
+        ET = 0.
+        for name in NAMES:
             if name is "MET":
                 continue
-            for _object in self[name]:
-                ET += _object["PT"]
+            for object_ in self[name]:
+                ET += object_["PT"]
 
         return ET
 
@@ -1572,11 +1572,11 @@ class Event(dict):
             MET = self["MET"][0]["PT"]
         else:
             MET_vector = Fourvector()
-            for name in _names:
+            for name in NAMES:
                 if name is "MET":
                     continue
-                for _object in self[name]:
-                    MET_vector += _object.vector()
+                for object_ in self[name]:
+                    MET_vector += object_.vector()
             MET = MET_vector.PT()
 
         return MET
@@ -1598,11 +1598,11 @@ class Event(dict):
         330.48
         """
 
-        ET = 0
-        for _object in self["jet"]:
-            ET += _object["PT"]
+        HT = 0.
+        for object_ in self["jet"]:
+            HT += object_["PT"]
 
-        return ET
+        return HT
 
     def MHT(self):
         r"""
@@ -1621,8 +1621,8 @@ class Event(dict):
         """
 
         MHT_vector = Fourvector()
-        for _object in self["jet"]:
-            MHT_vector += _object.vector()
+        for object_ in self["jet"]:
+            MHT_vector += object_.vector()
 
         MHT = MHT_vector.PT()
         return MHT
@@ -1672,12 +1672,12 @@ class Event(dict):
         +--------+--------+-------+--------+-------+------+------+-------+
         """
 
-        _objects = Objects()
+        objects = Objects()
         for jet in self["jet"]:
             if jet["btag"] == tagged:
-                _objects.append(jet)
+                objects.append(jet)
 
-        return _objects
+        return objects
 
 ###############################################################################
 
@@ -1710,7 +1710,7 @@ class Object(dict):
         :type dictionary: dict
         """
 
-        if name not in _names:
+        if name not in NAMES:
             warnings.warn("Name not recoginised: %s" % name)
 
         # Ordinary initialization
@@ -1726,7 +1726,7 @@ class Object(dict):
         """
 
         # Make table of event
-        table = pt(_headings)
+        table = pt(HEADINGS)
         table.add_row(self._row())
 
         return table.get_string()
@@ -1740,7 +1740,7 @@ class Object(dict):
         """
 
         row = [self.name]
-        for prop in _print_properties:
+        for prop in PRINT_PROPERTIES:
             row.append(self[prop])
 
         return row
@@ -1777,7 +1777,7 @@ class Object(dict):
         :param f_name: Name of LHCO file to be written
         :type f_name: string
         """
-        list_ = [repr(self[prop]).ljust(10) for prop in _properties]
+        list_ = [repr(self[prop]).ljust(10) for prop in PROPERTIES]
         print(*list_, file=open(f_name, "a"))
 
     def charge(self):
@@ -1806,7 +1806,7 @@ class Object(dict):
         if not self.name:
             warnings.warn("Cannot find charge of particle with no name")
             return None
-        if self.name not in _lepton:
+        if self.name not in LEPTON:
             warnings.warn("Cannot find charge of particle that is not lepton")
             return None
         else:
