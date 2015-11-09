@@ -2273,9 +2273,15 @@ def delta_R(o1, o2):
 
     >>> delta_R_12 = delta_R(events[0]["jet"][1], events[0]["jet"][2])
     >>> print(delta_R_12)
-    4.80541371788
+    1.87309282121
     """
-    delta_R = ((o1["eta"] - o2["eta"])**2 + (o1["phi"] - o2["phi"])**2)**0.5
+
+    delta_phi = abs(o1["phi"] - o2["phi"])
+    # Consider acute angle between objects
+    if delta_phi > pi:
+        delta_phi = 2. * pi - delta_phi
+
+    delta_R = ((o1["eta"] - o2["eta"])**2 + delta_phi**2)**0.5
 
     return delta_R
 
