@@ -81,7 +81,6 @@ import sys
 import warnings
 import inspect
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 from math import pi
@@ -687,6 +686,7 @@ class Events(list):
         .. figure::  plot.png
             :align:   center
         """
+        import matplotlib.pyplot as plt
 
         if name not in NAMES:
             warnings.warn("Name not recoginised: %s" % name)
