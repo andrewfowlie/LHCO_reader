@@ -1909,7 +1909,7 @@ class Fourvector(np.ndarray):
         Raising a four-vector to a power.
 
         .. warning::
-            Only power 2 (Minkowski square) supported.
+            Only even powers supported.
 
         .. math::
             x^2 = x^\mu x^\nu g_{\mu\nu}
@@ -1917,17 +1917,22 @@ class Fourvector(np.ndarray):
         :param power: Power to raise
         :type power: int
 
+        :returns: This four-vector raised to an even power
+        :rtype: float
+
         :Example:
 
         >>> x = [1,1,1,1]
         >>> p = Fourvector(x)
         >>> print(p**2)
         -2.0
+        >>> print(p**8)
+        16.0
         """
-        if not power == 2:
-            raise Exception("Only power 2 is supported: %i" % power)
+        if power % 2 or not isinstance(power, int):
+            raise Exception("Only even integer powers supported: %i" % power)
 
-        return self.__mul__(self)
+        return self.__mul__(self)**(power / 2)
 
     def __str__(self):
         """ Make a table of the four-vector for nice printing. """
