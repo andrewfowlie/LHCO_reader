@@ -1949,15 +1949,17 @@ class Fourvector(np.ndarray):
 
         # Four-vector multiplication i.e. Minkowski product
         if isinstance(other, Fourvector):
-            prod = 0.
-            for mu in range(4):
-                for nu in range(4):
-                    prod += self[mu] * other[nu] * self.metric[mu, nu]
-            return prod
+            product = self.dot(self.metric).dot(other)
+
+            if np.sign(self.metric[0, 0]) != np.sign(product):
+                warnings.warn("Minkowski-product wrong sign")
+
+            return product
+
         # Four-vector multiplied by a number
         elif isinstance(other, float) or isinstance(other, int):
-            prod = np.ndarray.__mul__(self, other)
-            return Fourvector(prod)
+            product = np.ndarray.__mul__(self, other)
+            return Fourvector(product)
 
         else:
             raise ValueError("Unsupported multiplication: %s" % type(other))
@@ -2030,7 +2032,12 @@ class Fourvector(np.ndarray):
         >>> print(abs(p))
         4.69041575982
         """
-        return self.__mul__(self)**0.5
+
+        square = self * self
+        assert np.sign(self.metric[0, 0]) == np.sign(square), \
+            "Minkowski-square wrong sign"
+
+        return square**0.5
 
     def __getslice__(self, other1, other2):
         """
