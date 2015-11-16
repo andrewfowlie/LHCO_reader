@@ -1947,11 +1947,15 @@ class Fourvector(np.ndarray):
         -2.0
         """
 
+        sign_g_00 = np.sign(self.metric[0, 0])
+
         # Four-vector multiplication i.e. Minkowski product
         if isinstance(other, Fourvector):
             product = self.dot(self.metric).dot(other)
 
-            if np.sign(self.metric[0, 0]) != np.sign(product):
+            if not product:
+                warnings.warn("Minkowski-product zero")
+            elif sign_g_00 != np.sign(product):
                 warnings.warn("Minkowski-product wrong sign")
 
             return product
@@ -2018,9 +2022,11 @@ class Fourvector(np.ndarray):
         Absolute value of this four-vector:
 
         .. math::
-            |x| = \sqrt{x_\mu x^\mu}
+            |x| = \sqrt{x_\mu x^\mu \times g_{00}}
 
-        i.e. the square-root of the Minkowski square.
+        i.e. the square-root of the Minkowski square. The presence of
+        :math:`g_{00}` insures that the argument is positive, regardless of
+        the metric convention.
 
         :returns: Absolute value of this four-vector
         :rtype: float
@@ -2033,11 +2039,16 @@ class Fourvector(np.ndarray):
         4.69041575982
         """
 
+        sign_g_00 = np.sign(self.metric[0, 0])
         square = self * self
-        assert np.sign(self.metric[0, 0]) == np.sign(square), \
-            "Minkowski-square wrong sign"
+        if not square:
+            warnings.warn("Minkowski-square zero")
+            return 0.
+        else:
+            assert sign_g_00 == np.sign(square) and square, \
+                "Minkowski-square wrong sign"
 
-        return square**0.5
+        return (sign_g_00 * square)**0.5
 
     def __getslice__(self, other1, other2):
         """
@@ -2219,8 +2230,10 @@ class Fourvector(np.ndarray):
         1.02062072616
 
         """
+        M = abs(self)
+        assert M, "Mass must be > 0: %s" % M
+        gamma = self[0] / M  # gamma = E / M
 
-        gamma = self[0] / abs(self)  # gamma = E / M
         return gamma
 
     def beta(self):
