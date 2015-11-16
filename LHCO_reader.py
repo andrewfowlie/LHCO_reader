@@ -1940,12 +1940,15 @@ class Fourvector(np.ndarray):
 
     def __abs__(self):
         r"""
-        Absolute value of a four-vector:
+        Absolute value of this four-vector:
 
         .. math::
             |x| = \sqrt{x_\mu x^\mu}
 
         i.e. the square-root of the Minkowski square.
+
+        :returns: Absolute value of this four-vector
+        :rtype: float
 
         :Example:
 
@@ -1964,10 +1967,13 @@ class Fourvector(np.ndarray):
 
     def phi(self):
         r"""
-        Find angle :math:`\phi` around beam line.
+        Find angle :math:`\phi` around beam line from [0., 2.*pi].
 
         .. math::
-            \phi = \arctan(p_y/p_x)
+            \phi = \arctan(p_y, p_x)
+
+        :returns: Angle around beamline, :math:`\phi` from [0., 2.*pi]
+        :rtype: float
 
         :Example:
 
@@ -1976,16 +1982,20 @@ class Fourvector(np.ndarray):
         >>> print(p.phi())
         0.785398163397
         """
-        tan_phi = self[2] / self[1]
-        phi = np.arctan(tan_phi)
+
+        phi = atan(self[2], self[1])
+
         return phi
 
     def PT(self):
         r"""
-        Return :math:`P_T` - transverse magnitude of vector.
+        Find :math:`P_T` - transverse magnitude of vector.
 
         .. math:
             P_T = \sqrt{p_x^2 + p_y^2}
+
+        :returns: Transverse magnitude of vector, math:`P_T`
+        :rtype: float
 
         :Example:
 
@@ -1998,10 +2008,14 @@ class Fourvector(np.ndarray):
 
     def theta(self):
         r"""
-        Find angle math: `\theta` between vector and beam line.
+        Find angle math: `\theta` between vector and beam line from [0., pi].
 
         .. math::
             \theta = \arctan(r/z)
+
+        :returns: Angle math: `\theta` between vector and beam line \
+        from [0., pi].
+        :rtype: float
 
         :Example:
 
@@ -2012,10 +2026,11 @@ class Fourvector(np.ndarray):
         """
         r = self.PT()
         z = self[3]
-        tan_theta = r / z
-        theta = np.arctan(tan_theta)
-        if z < 0:
-            theta += pi
+        theta = atan(r, z)
+
+        if theta > pi:
+            warnings.warn("Found angle \theta greater than \pi")
+
         return theta
 
     def eta(self):
@@ -2024,6 +2039,9 @@ class Fourvector(np.ndarray):
 
         .. math::
             \eta = -\ln(\tan\theta/2)
+
+        :returns: Pseudo-rapidity, :math:`\eta`
+        :rtype: float
 
         :Example:
 
@@ -2276,11 +2294,7 @@ def delta_R(o1, o2):
     1.87309282121
     """
 
-    delta_phi = abs(o1["phi"] - o2["phi"])
-    # Consider acute angle between objects
-    if delta_phi > pi:
-        delta_phi = 2. * pi - delta_phi
-
+    delta_phi = acute(o1["phi"], o2["phi"])
     delta_R = ((o1["eta"] - o2["eta"])**2 + delta_phi**2)**0.5
 
     return delta_R
@@ -2301,9 +2315,74 @@ def comment(x):
     """
     return "# " + str(x).replace("\n", "\n# ")
 
+###############################################################################
+
+
+def atan(y, x):
+    r"""
+    The :math:`\arctan` function
+
+    .. math::
+        \arctan(y / x)
+
+    but with correct quadrant and from [0., 2.*pi].
+
+    :param y: :math:`y`-coordinate
+    :type y: float
+    :param x: :math:`x`-coordinate
+    :type x: float
+
+    :returns: Angle from [0., 2.*pi]
+    :rytpe: float
+
+    >>> atan(1,1)
+    0.78539816339744828
+    >>> atan(-1,1)
+    5.497787143782138
+    >>> 2. * pi - atan(1,1)
+    5.497787143782138
+    >>> atan(1,-1)
+    2.3561944901923448
+    >>> 0.5 * pi + atan(1,1)
+    2.3561944901923448
+    >>> atan(-1,-1)
+    3.9269908169872414
+    >>> pi + atan(1,1)
+    3.9269908169872414
+    """
+
+    return np.arctan2(y, x) % (2. * pi)
 
 ###############################################################################
 
+
+def acute(phi_1, phi_2):
+    r"""
+    Find acute angle :math:`\Delta\phi` between two angles from [0., pi].
+
+    :param phi_1: First angle, :math:`\phi_1`
+    :type phi_1: float
+    :param phi_2: Second angle, :math:`\phi_2`
+    :type phi_2: float
+
+    :returns: Acute angle from [0., pi]
+    :rytpe: float
+
+    >>> acute(2. * pi, 0.)
+    0.0
+    >>> acute(4. * pi - 0.1, 8. * pi + 0.1)
+    0.20000000000000107
+    """
+
+    # Consider difference on [0., 2.*pi]
+    delta_phi = (phi_1 - phi_2) % (2. * pi)
+
+    # Consider acute angle
+    delta_phi = min(delta_phi, 2. * pi - delta_phi)
+
+    return delta_phi
+
+###############################################################################
 
 if __name__ == "__main__":
     import doctest
