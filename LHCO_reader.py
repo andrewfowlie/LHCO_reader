@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 """
 ============
 Introduction
@@ -45,7 +42,7 @@ The :class:`Event` dictionary's keys are
 - :literal:`muon`
 - :literal:`tau`
 - :literal:`jet`
-- :literal:`MET` (missing transerse energy)
+- :literal:`MET` (missing transverse energy)
 - :literal:`photon`
 
 The :class:`Object` dictionary's keys from the LHCO file are
@@ -65,19 +62,12 @@ event and type are integers, and other properties are floats.
 We add various additional properties, including a function :func:`vector()`,
 which returns a four-momentum object.
 """
-
-__author__ = "Andrew Fowlie"
-__copyright__ = "Copyright 2015"
-__credits__ = ["Luca Marzola"]
-__license__ = "GPL"
-__maintainer__ = "Andrew Fowlie"
-__email__ = "Andrew.Fowlie@Monash.Edu.Au"
-__status__ = "Production"
-
 ###############################################################################
 
+from __future__ import print_function
+from __future__ import division
+
 import os
-import sys
 import warnings
 import inspect
 
@@ -87,6 +77,16 @@ from math import pi
 from numpy import cos, sin
 from prettytable import PrettyTable as pt
 from collections import OrderedDict
+
+###############################################################################
+
+__author__ = "Andrew Fowlie"
+__copyright__ = "Copyright 2015"
+__credits__ = ["Luca Marzola"]
+__license__ = "GPL"
+__maintainer__ = "Andrew Fowlie"
+__email__ = "Andrew.Fowlie@Monash.Edu.Au"
+__status__ = "Production"
 
 ###############################################################################
 
@@ -214,7 +214,7 @@ class Events(list):
         """
         Parse an LHCO or ROOT file into a list of :class:`Event` objects.
 
-        It is possible to initialize an :class:`Events` class without a LHCO
+        It is possible to initialise an :class:`Events` class without a LHCO
         or a ROOT file, and later append events to the list.
 
         .. warning::
@@ -223,7 +223,7 @@ class Events(list):
 
         :param f_name: Name of an LHCO or ROOT file, including path
         :type f_name: str
-        :param list_: A list for initializing events
+        :param list_: A list for initialising events
         :type list_: list
         :param cut_list: Cuts applied to events and their acceptance
         :type cut_list: list
@@ -233,7 +233,7 @@ class Events(list):
         :type description: string
         """
 
-        # Ordinary initialization
+        # Ordinary initialisation
         if list_:
             super(self.__class__, self).__init__(list_)
 
@@ -255,7 +255,7 @@ class Events(list):
         if not f_name:
             warnings.warn("Events class without a LHCO or ROOT file")
         elif not os.path.isfile(f_name):  # Check that file exists
-            raise Exception("File does not exist: %s" % f_name)
+            raise IOError("File does not exist: %s" % f_name)
         else:
             # Consider file-type - ROOT or LHCO
             f_extension = os.path.splitext(f_name)[1]
@@ -266,7 +266,7 @@ class Events(list):
             elif f_extension == ".lhco":
                 self.LHCO_name = f_name
             else:
-                raise Exception("Unknown file extension: %s" % f_name)
+                raise IOError("Unknown file extension: %s" % f_name)
 
             self.__parse()  # Parse file
 
@@ -303,39 +303,47 @@ class Events(list):
         this class itself.
         """
 
+        def parse_lines(file_):
+            """
+            Generator that ignores comments and empty lines.
+
+            :param file_: Name of file
+            :type file_: file
+
+            :returns: Lines that should be parsed
+            :rtype: iterator
+            """
+            for line in file_:
+                line = line.strip()
+                if line and not line.startswith("#"):
+                    yield line
+
         n_events = self.n_events
-        with open(self.LHCO_name, 'r') as f:
-            for line in f:
+        event = None
 
-                line = line.lstrip()  # Remove leading/trailing spaces
+        with open(self.LHCO_name, 'r') as LHCO_file:
 
-                # Ignore empty lines
-                if not line:
-                    continue
+            for line in parse_lines(LHCO_file):
 
-                line_startswith = line[0]
-                if line_startswith is "#":  # Ignore comments etc
-                    continue
-                elif line_startswith is "0":  # New event in file
-                    # Parse previous event, if there is one
-                    try:
+                if line.startswith("0"):  # New event in file
+
+                    if event:  # Parse previous event, if there is one
                         self.add_event(event)  # Add Event class
-                    except:
-                        pass
                     event = [line]  # New event - reset event list
+
+                    # Don't parse more than a particular number of events
+                    if n_events and len(self) == n_events:
+                        warnings.warn("Didn't parse all LHCO events, by request")
+                        return
                 else:
+
                     # If there is not a "0", line belongs to current event,
                     # not a new event - add it to event
                     try:
                         event.append(line)
-                    except:
+                    except AttributeError:
                         warnings.warn("Possibly an event did not start with 0")
                         event = [line]
-
-                # Don't parse more than a particular number of events
-                if n_events and len(self) == n_events:
-                    warnings.warn("Didn't parse all LHCO events, by request")
-                    return
 
             # Parse final event in file - because there isn't a following event
             # the final event won't be parsed as above
@@ -371,7 +379,7 @@ class Events(list):
         +--------+----------+------+-----+-------+-------+---------------+-----------+----------+---------------+--------------+
         """
 
-        # Initalize dictionary for numbers of objects
+        # Initialise dictionary for numbers of objects
         number = PrintDict()
 
         number_names = list(NAMES)
@@ -412,16 +420,16 @@ class Events(list):
         exp_events = None
 
         try:
-            with open(self.LHCO_name, 'r') as f:
-                for line in f:
+            with open(self.LHCO_name, 'r') as LHCO_file:
+                for line in LHCO_file:
                     if line.strip().startswith("##  Number of Event"):
                         exp_events = int(line.split(":")[1])
                         break
                     if line.strip().startswith("# | Number of events |"):
                         exp_events = int(line.split("|")[2])
                         break
-        except:
-            pass
+        except IOError:
+            warnings.warn("Couldn't read expected number of events")
 
         return exp_events
 
@@ -431,6 +439,12 @@ class Events(list):
 
         "Add" two :class:`Event` classes together, making a new :class:`Event`
         class with all the events from each :class:`Event` class.
+
+        :param other: An class:`Event` class of events
+        :type other: class:`Event`
+
+        :returns: Combined class:`Event` class of events
+        :rtype: class:`Event`
 
         :Example:
 
@@ -442,17 +456,19 @@ class Events(list):
         """
 
         if not isinstance(other, Events):
-            raise Exception("Can only add Events with other Events object")
+            raise ValueError("Can only add Events with other Events object")
 
         # Make a description
         try:
-            d = self.description + " + " + other.description
-        except:
-            warnings.warngin("Couldn't find descriptions")
-            d = None
+            description = self.description + " + " + other.description
+        except TypeError:
+            warnings.warn("Couldn't find descriptions")
+            description = None
 
         # New set of events in Events class
-        combined = Events(list_=list.__add__(self, other), description=d)
+        combined = Events(list_=list.__add__(self, other),
+                          description=description
+                          )
 
         return combined
 
@@ -462,6 +478,9 @@ class Events(list):
 
         Rather than attempting to return thousands of events, return summary
         information about set of events.
+
+        :returns: String of :class:`Events` class
+        :rtype: string
 
         :Example:
 
@@ -479,14 +498,14 @@ class Events(list):
         # Find combined acceptance of all cuts
         combined_acceptable = 1.
 
-        for ii, (cut, acceptance) in enumerate(self.cut_list):
+        for cut_number, (cut, acceptance) in enumerate(self.cut_list):
 
             # Inspect source code
             try:
                 cut_string = inspect.getsource(cut).strip()
-            except:
+            except IOError:
                 warnings.warn("Did not inspect source. Probably running interactively")
-                cut_string = "Cut %s" % ii
+                cut_string = "Cut %s" % cut_number
 
             table.add_row([cut_string, str(acceptance)])
             combined_acceptable *= acceptance
@@ -502,6 +521,9 @@ class Events(list):
         """
         Represent object as a brief description. Representation of such a
         big list is anyway unreadable. See :func:`__str__`.
+
+        :returns: String of :class:`Events` class
+        :rtype: string
         """
         return self.__str__()
 
@@ -531,16 +553,16 @@ class Events(list):
 
         len_org = len(self)  # Remember original length
         if not len_org:
-            raise Exception("No events")
+            raise ValueError("No events")
 
         # Loop list in reverse order, removing events if they fail the cut.
         # Must be reverse order, because otherwise indices are
         # shifted when events are removed from the list.
         iterator = reversed(list(enumerate(self)))
 
-        for ii, event in iterator:
+        for event_number, event in iterator:
             if cut(event):
-                del self[ii]  # NB del is much faster than remove
+                del self[event_number]  # NB del is much faster than remove
 
         len_new = len(self)
         if not len_new:
@@ -596,11 +618,11 @@ class Events(list):
         """
 
         if name not in NAMES:
-            warnings.warn("Name not recoginised: %s" % name)
+            warnings.warn("Name not recognised: %s" % name)
             return
 
-        for ii in range(len(self)):
-            self[ii][name].cut_objects(cut)
+        for event in self:
+            event[name].cut_objects(cut)
 
         # Note that objects were cut with 100% efficiency
         self.cut_list.append([cut, 1.])
@@ -622,17 +644,18 @@ class Events(list):
         """
 
         if name not in NAMES:
-            warnings.warn("Name not recoginised: %s" % name)
+            warnings.warn("Name not recognised: %s" % name)
             return
 
         if prop not in PROPERTIES:
-            warnings.warn("Property not recoginised: %s" % prop)
+            warnings.warn("Property not recognised: %s" % prop)
             return
 
         # Make a list of the desired property
         column = []
         for event in self:
             column += [objects[prop] for objects in event[name]]
+
         return column
 
     def mean(self, name, prop):
@@ -655,11 +678,11 @@ class Events(list):
         """
 
         if name not in NAMES:
-            warnings.warn("Name not recoginised: %s" % name)
+            warnings.warn("Name not recognised: %s" % name)
             return
 
         if prop not in PROPERTIES:
-            warnings.warn("Property not recoginised: %s" % prop)
+            warnings.warn("Property not recognised: %s" % prop)
             return
 
         mean = np.mean(self.column(name, prop))
@@ -689,11 +712,11 @@ class Events(list):
         import matplotlib.pyplot as plt
 
         if name not in NAMES:
-            warnings.warn("Name not recoginised: %s" % name)
+            warnings.warn("Name not recognised: %s" % name)
             return
 
         if prop not in PROPERTIES:
-            warnings.warn("Property not recoginised: %s" % prop)
+            warnings.warn("Property not recognised: %s" % prop)
             return
 
         data = self.column(name, prop)  # Make data into a column
@@ -715,6 +738,14 @@ class Events(list):
         Slicing an :class:`Events` class  returns another :class:`Events` class
         rather than a list.
 
+        :param i: Opening index
+        :type i: integer
+        :param j: Closing index
+        :type j: integer
+
+        :returns: Slice of :class:`Events` class
+        :rtype: :class:`Events`
+
         :Example:
 
         >>> print(events[:100])
@@ -731,6 +762,12 @@ class Events(list):
         """
         Multiplying an :class:`Events` class returns another :class:`Events`
         class rather than a list.
+
+        :param other: Number to multiply by
+        :type other: int
+
+        :returns: Numerous copies of events in :class:`Events` class
+        :rtype: :class:`Events`
 
         :Example:
 
@@ -789,15 +826,15 @@ class Events(list):
         +----------+--------+-------+-------+-------+------+------+-------+
         """
         if os.path.isfile(LHCO_name) and not over_write:
-            raise Exception("Cannot overwrite %s" % LHCO_name)
+            raise IOError("Cannot overwrite %s" % LHCO_name)
 
         preamble = """LHCO file created with LHCO_reader (https://github.com/innisfree/LHCO_reader).
 See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHCO format."""
         print(comment(preamble), file=open(LHCO_name, "w"), end="\n\n")
         print(comment(self), file=open(LHCO_name, "a"), end="\n\n")
 
-        for nn, event in enumerate(self):
-            print("# Event number:", nn, file=open(LHCO_name, "a"))
+        for event_number, event in enumerate(self):
+            print("# Event number:", event_number, file=open(LHCO_name, "a"))
             event.LHCO(LHCO_name)
 
         return LHCO_name
@@ -844,7 +881,7 @@ See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHC
         import LHCO_converter
         ROOT_name = LHCO_converter.LHCO_ROOT(LHCO_name, ROOT_name)
         if not os.path.isfile(ROOT_name):
-            raise Exception("Could not convert to ROOT")
+            raise RuntimeError("Could not convert to ROOT")
 
         return ROOT_name
 
@@ -858,6 +895,10 @@ class PrintDict(OrderedDict):
     def __str__(self):
         """
         Make an easy to read table of the dictionary contents.
+
+        :returns: Table of the dictionary contents
+        :rtype: string
+
         """
 
         # Make table of dictionary keys and entries
@@ -899,7 +940,7 @@ class Objects(list):
         """
 
         if not self[0].get(prop):
-            warnings.warn("Property not recoginised: %s" % prop)
+            warnings.warn("Property not recognised: %s" % prop)
             return
 
         # Simply sort the list by the required property
@@ -910,14 +951,17 @@ class Objects(list):
     def __str__(self):
         """
         Return a nice readable table format.
+
+        :returns: Table of the dictionary contents
+        :rtype: string
         """
 
         # Make table of event
         table = pt(HEADINGS)
 
         # Add rows to the table
-        for obj in self:
-            table.add_row(obj._row())
+        for object_ in self:
+            table.add_row(object_._row())
 
         return table.get_string()
 
@@ -927,6 +971,12 @@ class Objects(list):
 
         E.g. you might wish to add :literal:`electron` with :literal:`muon` to
         make an :class:`Objects` class of all leptons.
+
+        :param other: Objects to combine
+        :type other: class:`Objects`
+
+        :returns: Combined class:`Objects` classes
+        :rtype: class:`Objects`
 
         :Example:
 
@@ -985,6 +1035,14 @@ class Objects(list):
         """
         Slicing returns another :class:`Objects` rather than a list.
 
+        :param i: Opening index
+        :type i: integer
+        :param j: Closing index
+        :type j: integer
+
+        :returns: Sliced class:`Objects` class
+        :rtype: class:`Objects`
+
         :Example:
 
         >>> print(events[0]["jet"][:2])
@@ -1000,6 +1058,12 @@ class Objects(list):
     def __mul__(self, other):
         """
         Multiplying returns another :class:`Objects` class rather than a list.
+
+        :param other: Number to multiply by
+        :type other: int
+
+        :returns: Numerous copies of objects in :class:`Objects` class
+        :rtype: :class:`Objects`
 
         :Example:
 
@@ -1034,8 +1098,8 @@ class Objects(list):
         """
         if self:
             self.order("PT")
-            for oo in self:
-                oo.LHCO(f_name)
+            for object_ in self:
+                object_.LHCO(f_name)
 
     def cut_objects(self, cut):
         """
@@ -1075,9 +1139,9 @@ class Objects(list):
         # shifted when events are removed from the list.
         iterator = reversed(list(enumerate(self)))
 
-        for ii, object_ in iterator:
+        for object_number, object_ in iterator:
             if cut(object_):
-                del self[ii]  # NB del is much faster than remove
+                del self[object_number]  # NB del is much faster than remove
 
     def pick_charge(self, charge):
         """
@@ -1115,12 +1179,9 @@ class Objects(list):
         +--------+-----+-----+----+-------+------+------+-------+
         """
 
-        objects = Objects()
-        for object_ in self:
-            if object_.charge() == charge:
-                objects.append(object_)
+        objects = [object_ for object_ in self if object_.charge() == charge]
 
-        return objects
+        return Objects(objects)
 
 ###############################################################################
 
@@ -1177,9 +1238,9 @@ class Event(dict):
         self.trigger_info = trigger_info
 
         if lines and dictionary:
-            raise("Must specify lines or dictionary")
+            raise ValueError("Must specify lines or dictionary")
 
-        # Ordinary initialization
+        # Ordinary initialisation
         if dictionary:
             super(self.__class__, self).__init__(dictionary)
             return
@@ -1187,7 +1248,7 @@ class Event(dict):
             super(self.__class__, self).__init__(EMPTY_DICT)
 
         # Build a dictionary of objects appearing in the event,
-        # e.g. self["electron"] is initialized to be an empty Objects class
+        # e.g. self["electron"] is initialised to be an empty Objects class
         for name in NAMES:
             self[name] = Objects()  # List of e.g. "electron"s in event
 
@@ -1203,6 +1264,9 @@ class Event(dict):
     def __str__(self):
         """
         Make a nice readable table format.
+
+        :returns: Readable table format
+        :rtype: :string
         """
 
         # Make table of event
@@ -1210,8 +1274,8 @@ class Event(dict):
 
         # Add rows to the table
         for name in NAMES:  # Iterate object types e.g electrons
-            for obj in self[name]:  # Iterate all objects of that type
-                table.add_row(obj._row())
+            for object_ in self[name]:  # Iterate all objects of that type
+                table.add_row(object_._row())
 
         return table.get_string()
 
@@ -1286,16 +1350,10 @@ class Event(dict):
 
         :Example:
 
-        >>> print(Event().count_parsed())
-        0
+        >>> print(events[0].count_parsed())
+        9
         """
-
-        # Record number of objects in an event and keep total
-        total_number = 0
-        for objects in self.itervalues():
-            total_number += len(objects)
-
-        return total_number
+        return sum([len(objects) for objects in self.itervalues()])
 
     def __count_file(self):
         """
@@ -1320,7 +1378,7 @@ class Event(dict):
         :type dictionary: dict
         """
         if name not in NAMES:
-            warnings.warn("Name not recoginised: %s" % name)
+            warnings.warn("Name not recognised: %s" % name)
 
         self[name].append(Object(name, dictionary))
 
@@ -1343,10 +1401,11 @@ class Event(dict):
             number = words[0]  # Number of object in event
 
             if number is "0":  # "0" events are trigger information
+                assert len(words) == 3, "Trigger should have 3 words"
                 self.trigger_info = map(int, words[1:])
-                continue
+            else:
+                assert len(words) == 11, "Event should have 11 words"
 
-            try:
                 # Map words to floats
                 values = map(float, words)
 
@@ -1359,13 +1418,18 @@ class Event(dict):
 
                 # Append an Object with the LHCO properties
                 self.add_object(name, zip(PROPERTIES, values))
-            except:
-                warnings.warn("Couldn't parse line")
 
     def __add__(self, other):
         """
         Add two events together, returning a new :class:`Event` class with all
         the e.g. electrons that were in original two events.
+
+        :param other: An :class:`Event` class of objects in an event
+        :type other: class:`Event`
+
+        :returns: An :class:`Event` class of objects in a this event and \
+        extra event
+        :rtype: :class:`Event`
 
         :Example:
 
@@ -1390,8 +1454,8 @@ class Event(dict):
         +----------+--------+-------+--------+-------+------+------+-------+
         """
         combination = Event()
-        for key in self.keys():
-            combination[key] = self[key] + other[key]  # Add Objects() lists
+        for name in self.keys():  # e.g. "electron"
+            combination[name] = self[name] + other[name]  # Add Objects() lists
 
         return combination
 
@@ -1401,6 +1465,9 @@ class Event(dict):
 
         :param other: Number to multiply by
         :type other: int
+
+        :returns: Numerous copies of objects in :class:`Event` class
+        :rtype: :class:`Event`
 
         :Example:
 
@@ -1429,8 +1496,8 @@ class Event(dict):
         +----------+--------+-------+--------+-------+------+------+-------+
         """
         prod = Event()
-        for key in self.keys():
-            prod[key] = self[key] * other  # Multiply object by object
+        for name in self.keys():  # e.g. "electron"
+            prod[name] = self[name] * other  # Multiply object by object
 
         return prod
 
@@ -1457,7 +1524,7 @@ class Event(dict):
 
         try:
             trigger = [0] + self.trigger_info
-        except:
+        except TypeError:
             warnings.warn("Missing trigger information")
             trigger = [0] * 3
 
@@ -1508,17 +1575,11 @@ class Event(dict):
         +----------+--------+-------+--------+-------+------+------+-------+
         """
 
-        # Record number of objects in an event and keep total
-        multiplicity = 0
-        for name in NAMES:
-            if name is "MET":
-                continue
-            multiplicity += self.number()[name]
-
-        return multiplicity
+        numbers = [self.number()[name] for name in NAMES if name is not "MET"]
+        return sum(numbers)
 
     def ET(self):
-        """
+        r"""
         Calculate the scalar sum of transverse energy in an event:
 
         .. math::
@@ -1534,11 +1595,9 @@ class Event(dict):
         """
 
         ET = 0.
-        for name in NAMES:
-            if name is "MET":
-                continue
-            for object_ in self[name]:
-                ET += object_["PT"]
+        no_MET_names = (name for name in NAMES if name is not "MET")
+        for name in no_MET_names:
+            ET += sum([object_["PT"] for object_ in self[name]])
 
         return ET
 
@@ -1572,17 +1631,15 @@ class Event(dict):
             MET = self["MET"][0]["PT"]
         else:
             MET_vector = Fourvector()
-            for name in NAMES:
-                if name is "MET":
-                    continue
-                for object_ in self[name]:
-                    MET_vector += object_.vector()
+            no_MET_names = (name for name in NAMES if name is not "MET")
+            for name in no_MET_names:
+                MET_vector += sum([object_.vector() for object_ in self[name]])
             MET = MET_vector.PT()
 
         return MET
 
     def HT(self):
-        """
+        r"""
         Calculate the scalar sum of transverse energy in jets in an event:
 
         .. math::
@@ -1598,11 +1655,7 @@ class Event(dict):
         330.48
         """
 
-        HT = 0.
-        for object_ in self["jet"]:
-            HT += object_["PT"]
-
-        return HT
+        return sum([object_["PT"] for object_ in self["jet"]])
 
     def MHT(self):
         r"""
@@ -1620,10 +1673,7 @@ class Event(dict):
         309.603169784
         """
 
-        MHT_vector = Fourvector()
-        for object_ in self["jet"]:
-            MHT_vector += object_.vector()
-
+        MHT_vector = sum([object_.vector() for object_ in self["jet"]])
         MHT = MHT_vector.PT()
         return MHT
 
@@ -1632,7 +1682,7 @@ class Event(dict):
         Count the number of b-jets in an event.
 
         :returns: Number of b-jets
-        :rtype: integer
+        :rtype: int
 
         :Example:
 
@@ -1671,13 +1721,8 @@ class Event(dict):
         |  jet   | 0.508  | 1.421 |  6.01  |  0.94 | 7.0  | 0.0  |  2.59 |
         +--------+--------+-------+--------+-------+------+------+-------+
         """
-
-        objects = Objects()
-        for jet in self["jet"]:
-            if jet["btag"] == tagged:
-                objects.append(jet)
-
-        return objects
+        objects = [jet for jet in self["jet"] if jet["btag"] == tagged]
+        return Objects(objects)
 
 ###############################################################################
 
@@ -1702,7 +1747,7 @@ class Object(dict):
 
     def __init__(self, name=None, dictionary=None):
         """
-        Initialize a single object, e.g. a single electron.
+        Initialise a single object, e.g. a single electron.
 
         :param name: Name of object, e.g. :literal:`electron`
         :type name: string
@@ -1711,9 +1756,9 @@ class Object(dict):
         """
 
         if name not in NAMES:
-            warnings.warn("Name not recoginised: %s" % name)
+            warnings.warn("Name not recognised: %s" % name)
 
-        # Ordinary initialization
+        # Ordinary initialisation
         if dictionary:
             super(self.__class__, self).__init__(dictionary)
 
@@ -1723,6 +1768,9 @@ class Object(dict):
         """
         Make e.g. properties about an electron into an easy to read table
         format.
+
+        :returns: String of :class:`Object` class
+        :rtype: string
         """
 
         # Make table of event
@@ -1737,21 +1785,26 @@ class Object(dict):
 
         This attribute is intended to be semi-private - i.e. you are not
         encouraged to call this function directly.
+
+        :returns: List of object's properties
+        :rtype: list
         """
 
-        row = [self.name]
-        for prop in PRINT_PROPERTIES:
-            row.append(self[prop])
+        row = [self[prop] for prop in PRINT_PROPERTIES]
+        row.insert(0, self.name)
 
         return row
 
     def vector(self):
-        """
+        r"""
         Make a four-momentum vector for this object.
 
         E.g., an electron's four-momentum from its
         :math:`P_T, \eta, \phi` parameters.
         :Example:
+
+        :returns: Four-momentum vector for this object
+        :rtype: :class:`Fourvector`
 
         >>> electron = Object()
         >>> electron["PT"] = 10
@@ -1784,8 +1837,8 @@ class Object(dict):
         """
         Find charge of object.
 
-        :returns: Charge of object. None if not eletron, mu or tau
-        :rtype: integer
+        :returns: Charge of object. None if not electron, mu or tau
+        :rtype: int
 
         :Example:
 
@@ -1820,7 +1873,7 @@ class Fourvector(np.ndarray):
     A four-vector, with relevant addition, multiplication etc. operations.
 
     Builds a four-vector from Cartesian co-ordinates. Defines Minkowski
-    product, square, additon of four-vectors.
+    product, square, addition of four-vectors.
 
     Inherits a numpy array.
 
@@ -1851,19 +1904,22 @@ class Fourvector(np.ndarray):
 
     metric = np.diag([1., -1., -1., -1.])  # Define metric
 
-    def __new__(self, v=None):
+    def __new__(cls, v_list=None):
         """
         Make four-vector from Cartesian co-ordinates.
 
-        :param v: Length 4 list of four-vector in Cartesian co-ordinates
-        :type v: list
-        """
-        if v is None:
-            v = [0.] * 4  # Default is empty four-vector
-        elif len(v) != 4:
-            raise("Four-vector must be length 4!")
+        :param v_list: Length 4 list of four-vector in Cartesian co-ordinates
+        :type v_list: list
 
-        return np.asarray(v).view(self)
+        :returns: Four-momentum array
+        :rtype: numpy.array
+        """
+        if v_list is None:
+            v_list = [0.] * 4  # Default is empty four-vector
+        elif len(v_list) != 4:
+            raise ValueError("Four-vector must be length 4!")
+
+        return np.asarray(v_list).view(cls)
 
     def __mul__(self, other):
         r"""
@@ -1877,6 +1933,12 @@ class Fourvector(np.ndarray):
 
             n \times x = n \times x^\mu
 
+        :param other: A float of another four-vector
+        :type other: float or :class:`Fourvector`
+
+        :returns: This four-vector multiplied by argument
+        :rtype: float or :class:`Fourvector`
+
         :Example:
 
         >>> x = [1,1,1,1]
@@ -1885,12 +1947,12 @@ class Fourvector(np.ndarray):
         -2.0
         """
 
-        # Four-vector multiplication i.e. Minkowksi product
+        # Four-vector multiplication i.e. Minkowski product
         if isinstance(other, Fourvector):
             prod = 0.
-            for ii in range(4):
-                for jj in range(4):
-                    prod += self[ii] * other[jj] * self.metric[ii, jj]
+            for mu in range(4):
+                for nu in range(4):
+                    prod += self[mu] * other[nu] * self.metric[mu, nu]
             return prod
         # Four-vector multiplied by a number
         elif isinstance(other, float) or isinstance(other, int):
@@ -1898,7 +1960,7 @@ class Fourvector(np.ndarray):
             return Fourvector(prod)
 
         else:
-            raise Exception("Unsupported multiplication: %s" % type(other))
+            raise ValueError("Unsupported multiplication: %s" % type(other))
 
     def __rmul__(self, other):
         """ Four-vector multiplication. See :func:`__mul__`. """
@@ -1914,7 +1976,7 @@ class Fourvector(np.ndarray):
         .. math::
             x^2 = x^\mu x^\nu g_{\mu\nu}
 
-        :param power: Power to raise
+        :param power: Power to raise (must be an even integer)
         :type power: int
 
         :returns: This four-vector raised to an even power
@@ -1930,12 +1992,18 @@ class Fourvector(np.ndarray):
         16.0
         """
         if power % 2 or not isinstance(power, int):
-            raise Exception("Only even integer powers supported: %i" % power)
+            raise ValueError("Only even integer powers supported: %i" % power)
 
         return self.__mul__(self)**(power / 2)
 
     def __str__(self):
-        """ Make a table of the four-vector for nice printing. """
+        """
+        Make a table of the four-vector for nice printing.
+
+        :returns: Table of the four-vector
+        :rtype: string
+
+        """
 
         headings = ["E", "P_x", "P_y", "P_z"]
         table = pt(headings)
@@ -1967,6 +2035,9 @@ class Fourvector(np.ndarray):
     def __getslice__(self, other1, other2):
         """
         If four-vector is sliced, return a regular numpy array.
+
+        :returns: Sliced four-vector
+        :rtype: numpy.array
         """
         return np.array(np.ndarray.__getslice__(self, other1, other2))
 
@@ -1977,7 +2048,7 @@ class Fourvector(np.ndarray):
         .. math::
             \phi = \arctan(p_y, p_x)
 
-        :returns: Angle around beamline, :math:`\phi` from [0., 2.*pi]
+        :returns: Angle around beam line, :math:`\phi` from [0., 2.*pi]
         :rtype: float
 
         :Example:
@@ -1989,6 +2060,7 @@ class Fourvector(np.ndarray):
         """
 
         phi = atan(self[2], self[1])
+        assert 0. <= phi <= 2. * pi, r"Angle \phi not in [0., 2.*pi]"
 
         return phi
 
@@ -2033,8 +2105,7 @@ class Fourvector(np.ndarray):
         z = self[3]
         theta = atan(r, z)
 
-        if theta > pi:
-            warnings.warn("Found angle \theta greater than \pi")
+        assert 0. <= theta <= pi, r"Angle \theta not in [0., \pi]"
 
         return theta
 
@@ -2056,12 +2127,12 @@ class Fourvector(np.ndarray):
         0.658478948462
         """
         theta = self.theta()
-        eta = -np.log(np.tan(theta/2.))  # Definiton of pseudo-rapidity
+        eta = -np.log(np.tan(theta/2.))  # Definition of pseudo-rapidity
         return eta
 
     def boost(self, beta):
         r"""
-        Boost four-vector into a new refrence-frame.
+        Boost four-vector into a new reference-frame.
 
         .. math::
             x^\prime = \Lambda(\beta) x
@@ -2277,17 +2348,17 @@ def Fourvector_eta(PT, eta, phi, mass=0.):
 ###############################################################################
 
 
-def delta_R(o1, o2):
+def delta_R(object_1, object_2):
     r"""
     Find the angular separation between two objects.
 
     .. math::
         \Delta R = \sqrt{\Delta \phi^2 + \Delta \eta^2}
 
-    :param o1: An Object, e.g. an electron
-    :type o1: :class:`Object`
-    :param o2: Second Object, e.g. jet
-    :type o2: :class:`Object`
+    :param object_1: An Object, e.g. an electron
+    :type object_1: :class:`Object`
+    :param object_2: Second Object, e.g. jet
+    :type object_2: :class:`Object`
 
     :returns: Angular separation between objects, :math:`\Delta R`
     :rtype: float
@@ -2299,10 +2370,10 @@ def delta_R(o1, o2):
     1.87309282121
     """
 
-    delta_phi = acute(o1["phi"], o2["phi"])
-    delta_R = ((o1["eta"] - o2["eta"])**2 + delta_phi**2)**0.5
+    delta_phi = acute(object_1["phi"], object_2["phi"])
+    delta_eta = object_1["eta"] - object_2["eta"]
 
-    return delta_R
+    return (delta_eta**2 + delta_phi**2)**0.5
 
 ###############################################################################
 
@@ -2384,6 +2455,8 @@ def acute(phi_1, phi_2):
 
     # Consider acute angle
     delta_phi = min(delta_phi, 2. * pi - delta_phi)
+
+    assert 0. <= delta_phi <= pi, r"Angle \Delta\phi not in [0., pi]"
 
     return delta_phi
 

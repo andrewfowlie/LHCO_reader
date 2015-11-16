@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from __future__ import division
-
 """
 ==============
 LHCO_converter
@@ -17,6 +14,17 @@ files.
 This module is intended to be be imported by :mod:`LHCO_reader`.
 """
 
+###############################################################################
+
+from __future__ import print_function
+from __future__ import division
+
+import subprocess
+import os
+import warnings
+
+###############################################################################
+
 __author__ = "Andrew Fowlie"
 __copyright__ = "Copyright 2015"
 __credits__ = ["Luca Marzola"]
@@ -27,20 +35,14 @@ __status__ = "Production"
 
 ###############################################################################
 
-import subprocess
-import os
-import warnings
-
-###############################################################################
-
 try:
-    delphes_path = os.environ["DELPHES"]
-    lhco2root = os.path.join(delphes_path, "lhco2root")
-    root2lhco = os.path.join(delphes_path, "root2lhco")
-    assert os.path.isfile(lhco2root)
-    assert os.path.isfile(root2lhco)
+    DELPHES_PATH = os.environ["DELPHES"]
+    LHCO_TO_ROOT = os.path.join(DELPHES_PATH, "lhco2root")
+    ROOT_TO_LHCO = os.path.join(DELPHES_PATH, "root2lhco")
+    assert os.path.isfile(LHCO_TO_ROOT)
+    assert os.path.isfile(ROOT_TO_LHCO)
 except:
-    raise Exception("Couldn't read $DELPHES bash variable for root2lhco and lhco2root")
+    raise ImportError("Couldn't read $DELPHES bash variable")
 
 ###############################################################################
 
@@ -61,10 +63,10 @@ def unique_name(f_name):
     extension = os.path.splitext(f_name)[1]
 
     trial_name = f_name
-    ii = 0
+    trial_number = 0
     while os.path.isfile(trial_name):
-        ii += 1
-        trial_name = base + "_" + str(ii) + extension
+        trial_number += 1
+        trial_name = base + "_" + str(trial_number) + extension
 
     if trial_name != f_name:
         warnings.warn("Requested %s changed to %s" % (f_name, trial_name))
@@ -100,15 +102,18 @@ def LHCO_ROOT(LHCO_name, ROOT_name=None):
     ROOT_name = unique_name(ROOT_name)
 
     if not os.path.isfile(LHCO_name):
-        raise Exception("Could not find LHCO file: %s" % LHCO_name)
+        raise IOError("Could not find LHCO file: %s" % LHCO_name)
 
     # Convert LHCO to ROOT
-    command = [lhco2root, ROOT_name, LHCO_name]
-    process = subprocess.Popen(command, stdout=open(os.devnull, 'w'), stderr=subprocess.PIPE)
+    command = [LHCO_TO_ROOT, ROOT_name, LHCO_name]
+    process = subprocess.Popen(command,
+                               stdout=open(os.devnull, 'w'),
+                               stderr=subprocess.PIPE
+                               )
     error = process.communicate()[1]
 
     if "Error" in error or not os.path.isfile(ROOT_name):
-        raise Exception("Could not convert to ROOT")
+        raise RuntimeError("Could not convert to ROOT")
 
     return ROOT_name
 
@@ -140,18 +145,21 @@ def ROOT_LHCO(ROOT_name, LHCO_name=None):
         LHCO_name = os.path.splitext(ROOT_name)[0] + ".lhco"
     LHCO_name = unique_name(LHCO_name)
 
-    if not os.path.isfile(root2lhco):
-        raise Exception("Could not find %s" % root2lhco)
+    if not os.path.isfile(ROOT_TO_LHCO):
+        raise IOError("Could not find %s" % ROOT_TO_LHCO)
 
     if not os.path.isfile(ROOT_name):
-        raise Exception("Could not find ROOT file %s" % ROOT_name)
+        raise IOError("Could not find ROOT file %s" % ROOT_name)
 
     # Convert ROOT to LHCO
-    command = [root2lhco, ROOT_name, LHCO_name]
-    process = subprocess.Popen(command, stdout=open(os.devnull, 'w'), stderr=subprocess.PIPE)
+    command = [ROOT_TO_LHCO, ROOT_name, LHCO_name]
+    process = subprocess.Popen(command,
+                               stdout=open(os.devnull, 'w'),
+                               stderr=subprocess.PIPE
+                               )
     error = process.communicate()[1]
 
     if "Error" in error or not os.path.isfile(LHCO_name):
-        raise Exception("Could not convert to LHCO")
+        raise RuntimeError("Could not convert to LHCO")
 
     return LHCO_name
