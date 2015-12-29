@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 r"""
 ============
-kinetic test
+Kinetic test
 ============
 
 Test kinematic variables against Oxbridge library.
@@ -33,7 +33,7 @@ Inputs from  :literal:`helloWorld_Mt2_Without_Minuit2_Example.cpp`.
 >>> vec_MET = [-200., 280., 0.]
 >>> m_MET = 100.
 
-Build :class`Object` for each object.
+Build :class:`Object` for each object.
 
 >>> object_a = object(m_a, vec_a)
 >>> object_b = object(m_b, vec_b)
@@ -52,7 +52,8 @@ Test :math:`\alpha_T`
 Compile and execute :literal:`AlphaT_Multijet_Calculator_Example.cpp` and
 check against below results.
 
-# Ten lots of Oxbridge's example event
+Ten lots of Oxbridge's example event
+====================================
 
 >>> j_1 = LHCO_reader.Fourvector([422.966, 410., 20., -20.])
 >>> j_2 = LHCO_reader.Fourvector([398.166, -210., -300., 44.])
@@ -60,7 +61,8 @@ check against below results.
 >>> event.alpha_T()
 0.5577197143955096
 
-# Event with no jets
+Event with no jets
+==================
 
 >>> event = LHCO_reader.Event()
 >>> try:
@@ -69,7 +71,8 @@ check against below results.
 ...     print(error.message)
 Calcuating alpha_T for event with one or no jets
 
-# Event with one jet
+Event with one jet
+==================
 
 >>> j_1 = LHCO_reader.Fourvector([5., 1., 0., 0.])
 >>> event = event_fourvector([j_1])
@@ -79,7 +82,8 @@ Calcuating alpha_T for event with one or no jets
 ...     print(error.message)
 Calcuating alpha_T for event with one or no jets
 
-# Event with perfectly balanced jets
+Event with perfectly balanced jets
+==================================
 
 >>> j_1 = LHCO_reader.Fourvector([1., 1., 0., 0.])
 >>> j_2 = LHCO_reader.Fourvector([1., -1., 0., 0.])
@@ -87,7 +91,8 @@ Calcuating alpha_T for event with one or no jets
 >>> event.alpha_T()
 0.5
 
-# Imbalanced back-to-back QCD events
+Imbalanced back-to-back QCD events
+==================================
 
 >>> j_1 = LHCO_reader.Fourvector([1., 1., 0., 0.])
 >>> j_2 = LHCO_reader.Fourvector([0.2, -0.2, 0., 0.])
@@ -100,7 +105,8 @@ Calcuating alpha_T for event with one or no jets
 >>> event.alpha_T()
 0.22360679774997896
 
-# Pascal Nef's first challenge
+Pascal Nef's first challenge
+============================
 
 Input data from :literal:`helloWorld_Mt2_Without_Minuit2_Example.cpp`.
 
@@ -124,7 +130,8 @@ Check :math:`\alpha_T`.
 >>> event.alpha_T()
 4.5602659028397481
 
-# Pascal Nef's second challenge
+Pascal Nef's second challenge
+=============================
 
 Input data from :literal:`helloWorld_Mt2_Without_Minuit2_Example.cpp`.
 
