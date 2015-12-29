@@ -61,6 +61,16 @@ event and type are integers, and other properties are floats.
 
 We add various additional properties, including a function :func:`vector()`,
 which returns a four-momentum object.
+
+Complicated kinematic variables could be included from the oxbridge kinetics
+library.
+
+>>> object_1 = events[0]["jet"][0]
+>>> object_2 = events[0]["jet"][1]
+>>> MET = events[0]["MET"][0]
+>>> from oxbridge_kinetics import MT2
+>>> MT2(object_1, object_2, MET)
+53.305931964300186
 """
 ###############################################################################
 
@@ -72,11 +82,12 @@ import warnings
 import inspect
 
 import numpy as np
+import partition_problem as pp
 
 from math import pi
 from numpy import cos, sin
-from prettytable import PrettyTable as pt
 from collections import OrderedDict
+from prettytable import PrettyTable as pt
 
 ###############################################################################
 
@@ -135,6 +146,10 @@ HEADINGS = ["Object"] + list(PRINT_PROPERTIES)
 EMPTY_DICT = dict.fromkeys(NAMES)
 
 LEPTON = ["electron", "muon", "tau"]
+
+# Default algorithms for partition problems
+ALPHA_T_ALGORITHM = "CKK"
+RAZOR_ALGORITHM = "non_standard_brute"
 
 ###############################################################################
 
@@ -472,6 +487,103 @@ class Events(list):
 
         return combined
 
+    def acceptance(self):
+        """
+        :returns: Combined acceptance of all cuts
+        :rtype: float
+
+        >>> events = Events("example.lhco")
+        >>> tau = lambda event: event.number()["tau"] == 1
+        >>> events.cut(tau)
+        >>> events.acceptance()
+        0.8656
+        """
+        combined_acceptance = 1.
+        for (_, acceptance) in self.cut_list:
+            combined_acceptance *= acceptance
+        return combined_acceptance
+
+    def number_original(self):
+        """
+        Reconstruct number of events in original set of events from cut
+        efficiencies.
+
+        .. warning::
+            For this to be correct, you must always remove events \
+            using :funct:`cut_events`.
+
+        :returns: Original number of events
+        :rtype: integer
+
+        >>> events = Events("example.lhco")
+        >>> tau = lambda event: event.number()["tau"] == 1
+        >>> events.cut(tau)
+        >>> events.number_original()
+        10000
+        """
+        return int(len(self) / self.acceptance())
+
+    def error_acceptance(self):
+        r"""
+        Statistical error of estimate of acceptance (from :func:`acceptance`)
+        found from binomial statistics.
+
+        .. math::
+            \sigma = \sqrt{\frac{p (1 - p)}{n}}
+
+        :returns: Statistical error of acceptance
+        :rtype: float
+
+        >>> events = Events("example.lhco")
+        >>> tau = lambda event: event.number()["tau"] == 1
+        >>> events.cut(tau)
+        >>> events.error_acceptance()
+        0.0034108157382069172
+        """
+        acceptance = self.acceptance()
+        number_original = self.number_original()
+        error = (acceptance * (1. - acceptance) / number_original)**0.5
+        return error
+
+    def summarize_cuts(self):
+        """
+        Make a summary table of cuts applied to events
+        from :literal:`cut_list`.
+
+        :returns: Table of cuts
+        :rtype: string
+
+        >>> events = Events("example.lhco")
+        >>> tau = lambda event: event.number()["tau"] == 1
+        >>> events.cut(tau)
+        >>> print(events.summarize_cuts())
+        +------------------------------------------------+------------------+
+        | tau = lambda event: event.number()["tau"] == 1 | 0.8656           |
+        | Combined acceptance                            | 0.8656           |
+        | Error acceptance                               | 0.00341081573821 |
+        +------------------------------------------------+------------------+
+        """
+        table = pt(header=False)
+
+        for cut_number, (cut, acceptance) in enumerate(self.cut_list):
+
+            # Inspect source code
+            try:
+                cut_string = inspect.getsource(cut).strip()
+            except IOError:
+                warnings.warn("Did not inspect source. Probably running interactively")
+                cut_string = "Cut %s" % cut_number
+
+            table.add_row([cut_string, str(acceptance)])
+
+        # Add information about combined acceptance
+        if self.cut_list:
+            table.add_row(["Combined acceptance", str(self.acceptance())])
+            table.add_row(["Error acceptance", str(self.error_acceptance())])
+
+        table.align = "l"
+        return table.get_string()
+
     def __str__(self):
         """
         Make a string of an :class:`Events` class.
@@ -494,28 +606,14 @@ class Events(list):
         table = pt(header=False)
         table.add_row(["Number of events", len(self)])
         table.add_row(["Description", self.description])
-
-        # Find combined acceptance of all cuts
-        combined_acceptable = 1.
-
-        for cut_number, (cut, acceptance) in enumerate(self.cut_list):
-
-            # Inspect source code
-            try:
-                cut_string = inspect.getsource(cut).strip()
-            except IOError:
-                warnings.warn("Did not inspect source. Probably running interactively")
-                cut_string = "Cut %s" % cut_number
-
-            table.add_row([cut_string, str(acceptance)])
-            combined_acceptable *= acceptance
-
-        # Add information about combined acceptance
-        if self.cut_list:
-            table.add_row(["Combined acceptance", str(combined_acceptable)])
-
         table.align = "l"
-        return table.get_string()
+        summary = table.get_string()
+
+        # Add information about cuts
+        if self.cut_list:
+            summary += "\n\n" + self.summarize_cuts()
+
+        return summary
 
     def __repr__(self):
         """
@@ -543,12 +641,16 @@ class Events(list):
         >>> tau = lambda event: event.number()["tau"] == 1
         >>> events.cut(tau)
         >>> print(events)
-        +------------------------------------------------+--------------+
-        | Number of events                               | 8656         |
-        | Description                                    | example.lhco |
-        | tau = lambda event: event.number()["tau"] == 1 | 0.8656       |
-        | Combined acceptance                            | 0.8656       |
-        +------------------------------------------------+--------------+
+        +------------------+--------------+
+        | Number of events | 8656         |
+        | Description      | example.lhco |
+        +------------------+--------------+
+        <BLANKLINE>
+        +------------------------------------------------+------------------+
+        | tau = lambda event: event.number()["tau"] == 1 | 0.8656           |
+        | Combined acceptance                            | 0.8656           |
+        | Error acceptance                               | 0.00341081573821 |
+        +------------------------------------------------+------------------+
         """
 
         len_org = len(self)  # Remember original length
@@ -609,12 +711,16 @@ class Events(list):
         |   MET    |  0.0   |  1.15 |  8.66 |  0.0  | 0.0  | 0.0  |  0.0  |
         +----------+--------+-------+-------+-------+------+------+-------+
         >>> print(events)
-        +------------------------------------------+--------------+
-        | Number of events                         | 10000        |
-        | Description                              | example.lhco |
-        | PT = lambda object_: object_["PT"] < 30. | 1.0          |
-        | Combined acceptance                      | 1.0          |
-        +------------------------------------------+--------------+
+        +------------------+--------------+
+        | Number of events | 10000        |
+        | Description      | example.lhco |
+        +------------------+--------------+
+        <BLANKLINE>
+        +------------------------------------------+-----+
+        | PT = lambda object_: object_["PT"] < 30. | 1.0 |
+        | Combined acceptance                      | 1.0 |
+        | Error acceptance                         | 0.0 |
+        +------------------------------------------+-----+
         """
 
         if name not in NAMES:
@@ -674,7 +780,7 @@ class Events(list):
         :Example:
 
         >>> events.mean("electron", "PT")
-        123.39502178770948
+        123.39502178770951
         """
 
         if name not in NAMES:
@@ -1578,6 +1684,149 @@ class Event(dict):
         numbers = [self.number()[name] for name in NAMES if name is not "MET"]
         return sum(numbers)
 
+    def delta_HT(self):
+        r"""
+        Minimize :math:`\Delta H_T` by dividing jets into partitions or
+        pseudo-jets such that it is minimized.
+
+        .. math::
+            \Delta H_T = \sum_{j \in j_2} H_T - \sum_{j \in j_1} H_T
+
+        This is a
+        `partition problem <https://en.wikipedia.org/wiki/pp>`_.
+
+        :returns: :math:`\Delta H_T`
+        :rtype: float
+
+        >>> events[0].delta_HT()
+        3.3800000000000088
+        """
+        PT = [jet["PT"] for jet in self["jet"]]
+        delta_HT = pp.solver(PT, algorithm=ALPHA_T_ALGORITHM)
+        return delta_HT
+
+    def alpha_T(self):
+        r"""
+        The :math:`\alpha_T` variable used in e.g. CMS searches for
+        supersymmetry. See `arXiv:1303.2985 <http://arxiv.org/abs/1303.2985>`_.
+
+        .. math::
+            \alpha_T = \frac12 \frac{H_T - \Delta H_T}{\sqrt{H_T^2 - \Delta H_T^2}}
+
+        There are various algorithms for calculating :math:`\Delta H_T`.
+        See :func:`delta_HT`.
+
+        :param algorithm: Choice of algorithm for :math:`\Delta H_T`
+        :type algorithm: string
+
+        :returns: :math:`\alpha_T` variable
+        :rtype: float
+
+        >>> events[0].alpha_T()
+        1.4148163330213006
+        """
+        assert len(self["jet"]) > 1, "Calcuating alpha_T for event with one or no jets"
+
+        HT = self.HT()
+        MHT = self.MHT()
+        delta_HT = self.delta_HT()
+        return 0.5 * (HT - delta_HT) / (HT**2 - MHT**2)**0.5
+
+    def mega_jets(self):
+        r"""
+        Divide :math:`n`-jets into two mega-jets as described in
+        `arXiv:1502.00300 <http://arxiv.org/abs/1502.00300>`_.
+
+        The choice of mega-jets minizes the sum of the invariant masses of
+        the two mega-jets.
+
+        This is a non-standard
+        `partition problem <https://en.wikipedia.org/wiki/pp>`_.
+        It differs from regular partition problems because we attempt to
+        minimize a sum of invariant masses and invariant mass is non-linear.
+
+        :returns: Fourmomentum of each mega-jet
+        :rype: List of :class:`Fourmomentum`
+
+        >>> for mega_jet in events[0].mega_jets():
+        ...     print(mega_jet)
+        ...     print(abs(mega_jet))
+        +---------------+---------------+---------------+----------------+
+        |       E       |      P_x      |      P_y      |      P_z       |
+        +---------------+---------------+---------------+----------------+
+        | 317.570707098 | 99.2274683859 | 269.239699011 | -118.794798267 |
+        +---------------+---------------+---------------+----------------+
+        66.3539290883
+        +---------------+--------------+---------------+---------------+
+        |       E       |     P_x      |      P_y      |      P_z      |
+        +---------------+--------------+---------------+---------------+
+        | 64.9644034641 | 32.129245428 | 11.1163896984 | 8.57454453438 |
+        +---------------+--------------+---------------+---------------+
+        54.6899293451
+        """
+        assert len(self["jet"]) > 1, "Attempting to combine one or no jets in mega-jets"
+
+        all_jets = [jet.vector() for jet in self["jet"]]
+        all_jets.sort(key=lambda jet: abs(jet), reverse=True)
+        mass = lambda mega_jet_1, mega_jet_2: abs(mega_jet_1) + abs(mega_jet_2)
+        mega_jets = pp.non_standard_solver(all_jets, mass, algorithm=RAZOR_ALGORITHM)
+        return mega_jets
+
+    def razor_MR(self):
+        r"""
+        The razor :math`M^R` variable, as described in
+        `arXiv:1502.00300 <http://arxiv.org/abs/1502.00300>`_.
+
+        .. math::
+            M^R = sqrt{(|\vec j_1| + |\vec j_2|)^2 - (j_1^z j_2^z)^2}
+
+        :returns: The razor :math`M_R` variable
+        :rtype: float
+
+        >>> events[0].razor_MR()
+        327.57801830352366
+        """
+        jet_1, jet_2 = self.mega_jets()
+        abs_vector = lambda jet: (jet[1]**2 + jet[2]**2 + jet[3]**2)**0.5
+        MR = ((abs_vector(jet_1) + abs_vector(jet_2))**2 - (jet_1[3] + jet_2[3])**2)**0.5
+        return MR
+
+    def razor_MRT(self):
+        r"""
+        The razor :math`M^R_T` variable, as described in
+        `arXiv:1502.00300 <http://arxiv.org/abs/1502.00300>`_.
+
+        .. math::
+            M^R_T = \sqrt{1/2} \sqrt{E_T j_T - E_x j_x - E_y j_y}
+
+        :returns: The razor :math`M^R_T` variable
+        :rtype: float
+
+        >>> events[0].razor_MRT()
+        57.353513060398633
+        """
+        jet_1, jet_2 = self.mega_jets()
+        jet = jet_1 + jet_2
+        MET = self["MET"][0].vector()
+        MRT = (0.5 * (MET.PT() * jet.PT() - MET[1] * jet[1] - MET[2] * jet[2]))**0.5
+        return MRT
+
+    def razor_R(self):
+        r"""
+        The razor :math`R` variable, as described in
+        `arXiv:1502.00300 <http://arxiv.org/abs/1502.00300>`_.
+
+        .. math::
+            R = M_T^R / M_R
+
+        :returns: The razor :math`R` variable
+        :rtype: float
+
+        >>> events[0].razor_R()
+        0.175083521652105
+        """
+        return self.razor_MRT() / self.razor_MR()
+
     def ET(self):
         r"""
         Calculate the scalar sum of transverse energy in an event:
@@ -1654,7 +1903,7 @@ class Event(dict):
         >>> print(events[0].HT())
         330.48
         """
-
+        assert len(self["jet"]) > 0, "Calcuating HT for event with no jets"
         return sum([object_["PT"] for object_ in self["jet"]])
 
     def MHT(self):
@@ -1672,6 +1921,7 @@ class Event(dict):
         >>> print(events[0].MHT())
         309.603169784
         """
+        assert len(self["jet"]) > 0, "Calcuating MHT for event with no jets"
 
         MHT_vector = sum([object_.vector() for object_ in self["jet"]])
         MHT = MHT_vector.PT()
@@ -2119,9 +2369,9 @@ class Fourvector(np.ndarray):
         >>> print(p.theta())
         0.955316618125
         """
-        r = self.PT()
-        z = self[3]
-        theta = atan(r, z)
+        transverse_length = self.PT()
+        beam_length = self[3]
+        theta = atan(transverse_length, beam_length)
 
         assert 0. <= theta <= pi, r"Angle \theta not in [0., \pi]"
 
@@ -2230,9 +2480,9 @@ class Fourvector(np.ndarray):
         1.02062072616
 
         """
-        M = abs(self)
-        assert M, "Mass must be > 0: %s" % M
-        gamma = self[0] / M  # gamma = E / M
+        mass = abs(self)
+        assert mass, "Mass must be > 0: %s" % mass
+        gamma = self[0] / mass  # gamma = E / M
 
         return gamma
 
@@ -2355,15 +2605,15 @@ def Fourvector_eta(PT, eta, phi, mass=0.):
     """
 
     theta = 2. * np.arctan(np.exp(-eta))
-    p = PT / sin(theta)
-    E = (p**2 + mass**2)**0.5
-    v = [E,
-         p * sin(theta) * cos(phi),
-         p * sin(theta) * sin(phi),
-         p * cos(theta)]
+    abs_momentum = PT / sin(theta)
+    energy = (abs_momentum**2 + mass**2)**0.5
+    four_momentum = [energy,
+                     abs_momentum * sin(theta) * cos(phi),
+                     abs_momentum * sin(theta) * sin(phi),
+                     abs_momentum * cos(theta)]
 
     # Make new four-vector with calculated Cartesian co-ordinates
-    return Fourvector(v)
+    return Fourvector(four_momentum)
 
 ###############################################################################
 
@@ -2398,23 +2648,23 @@ def delta_R(object_1, object_2):
 ###############################################################################
 
 
-def comment(x):
+def comment(object_):
     """
     Places :literal:`#` at the beginning of every line in a string or an
     object to be represented as a string.
 
-    :param x: String to be commented
-    :type x: string
+    :param object_: String to be commented
+    :type object_: Object with :func:`__str__`
 
     :returns: Commented string
     :rtype: string
     """
-    return "# " + str(x).replace("\n", "\n# ")
+    return "# " + str(object_).replace("\n", "\n# ")
 
 ###############################################################################
 
 
-def atan(y, x):
+def atan(y_length, x_length):
     r"""
     The :math:`\arctan` function
 
@@ -2423,10 +2673,10 @@ def atan(y, x):
 
     but with correct quadrant and from [0., 2.*pi].
 
-    :param y: :math:`y`-coordinate
-    :type y: float
-    :param x: :math:`x`-coordinate
-    :type x: float
+    :param y_length: :math:`y`-length
+    :type y_length: float
+    :param x_length: :math:`x`-length
+    :type x_length: float
 
     :returns: Angle from [0., 2.*pi]
     :rytpe: float
@@ -2447,7 +2697,7 @@ def atan(y, x):
     3.9269908169872414
     """
 
-    return np.arctan2(y, x) % (2. * pi)
+    return np.arctan2(y_length, x_length) % (2. * pi)
 
 ###############################################################################
 
