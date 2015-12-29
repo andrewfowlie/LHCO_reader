@@ -5,9 +5,9 @@ Introduction
 ============
 
 Read an `LHCO <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_
-(or ROOT) file, from e.g. `PGS <
-http://www.physics.ucdavis.edu/~conway/research/software/pgs/pgs4-general.html
->`_ or `Delphes <https://cp3.irmp.ucl.ac.be/projects/delphes>`_ into
+(or ROOT) file, from e.g. 
+`PGS <http://www.physics.ucdavis.edu/~conway/research/software/pgs/pgs4-general.html>`_ 
+or `Delphes <https://cp3.irmp.ucl.ac.be/projects/delphes>`_ into
 convenient Python classes.
 
 The code is object-oriented. A LHCO file is parsed into several objects:
