@@ -69,7 +69,7 @@ Event with no jets
 ...     event.alpha_T()
 ... except AssertionError as error:
 ...     print(error.message)
-Calcuating alpha_T for event with one or no jets
+Calculating alpha_T for event with one or no jets
 
 Event with one jet
 ==================
@@ -80,7 +80,7 @@ Event with one jet
 ...     event.alpha_T()
 ... except AssertionError as error:
 ...     print(error.message)
-Calcuating alpha_T for event with one or no jets
+Calculating alpha_T for event with one or no jets
 
 Event with perfectly balanced jets
 ==================================

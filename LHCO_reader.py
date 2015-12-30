@@ -5,8 +5,9 @@ Introduction
 ============
 
 Read an `LHCO <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_
-(or ROOT) file, from e.g. 
-`PGS <http://www.physics.ucdavis.edu/~conway/research/software/pgs/pgs4-general.html>`_ 
+(or ROOT) file, from e.g.
+`PGS <http://www.physics.ucdavis.edu/
+| ~conway/research/software/pgs/pgs4-general.html>`_
 or `Delphes <https://cp3.irmp.ucl.ac.be/projects/delphes>`_ into
 convenient Python classes.
 
@@ -62,7 +63,7 @@ event and type are integers, and other properties are floats.
 We add various additional properties, including a function :func:`vector()`,
 which returns a four-momentum object.
 
-Complicated kinematic variables could be included from the oxbridge kinetics
+Complicated kinematic variables could be included from the Oxbridge kinetics
 library.
 
 >>> object_1 = events[0]["jet"][0]
@@ -348,7 +349,8 @@ class Events(list):
 
                     # Don't parse more than a particular number of events
                     if n_events and len(self) == n_events:
-                        warnings.warn("Didn't parse all LHCO events, by request")
+                        warnings.warn("Didn't parse all LHCO events, "
+                                      "by request")
                         return
                 else:
 
@@ -510,7 +512,7 @@ class Events(list):
 
         .. warning::
             For this to be correct, you must always remove events \
-            using :funct:`cut_events`.
+            using :func:`cut_events`.
 
         :returns: Original number of events
         :rtype: integer
@@ -571,7 +573,8 @@ class Events(list):
             try:
                 cut_string = inspect.getsource(cut).strip()
             except IOError:
-                warnings.warn("Did not inspect source. Probably running interactively")
+                warnings.warn("Did not inspect source. "
+                              "Probably running interactively")
                 cut_string = "Cut %s" % cut_number
 
             table.add_row([cut_string, str(acceptance)])
@@ -799,7 +802,7 @@ class Events(list):
         """
         Show a 1-dimensional histogram of an object's property.
 
-        Plot basic histogram with matplotlib with crude titles and axis
+        Plot basic histogram with :mod:`matplotlib` with crude titles and axis
         labels. The histogram is normalised to one.
 
         :param name: Name of object, e.g. :literal:`electron`
@@ -812,8 +815,8 @@ class Events(list):
 
         >>> events.plot("electron", "PT")
 
-        .. figure::  plot.png
-            :align:   center
+        .. figure:: plot.png
+            :align: center
         """
         import matplotlib.pyplot as plt
 
@@ -839,15 +842,15 @@ class Events(list):
 
         plt.show()  # Show the plot on screen
 
-    def __getslice__(self, i, j):
+    def __getslice__(self, index_i, index_j):
         """
         Slicing an :class:`Events` class  returns another :class:`Events` class
         rather than a list.
 
-        :param i: Opening index
-        :type i: integer
-        :param j: Closing index
-        :type j: integer
+        :param index_i: Opening index
+        :type index_i: integer
+        :param index_j: Closing index
+        :type index_j: integer
 
         :returns: Slice of :class:`Events` class
         :rtype: :class:`Events`
@@ -860,8 +863,9 @@ class Events(list):
         | Description      | Events 0 to 99 in example.lhco |
         +------------------+--------------------------------+
         """
-        events = Events(list_=list.__getslice__(self, i, j))
-        events.description = "Events {} to {} in {}".format(i, j-1, self.description)
+        events = Events(list_=list.__getslice__(self, index_i, index_j))
+        template = "Events {} to {} in %s" % self.description
+        events.description = template.format(index_i, index_j - 1)
         return events
 
     def __mul__(self, other):
@@ -934,8 +938,11 @@ class Events(list):
         if os.path.isfile(LHCO_name) and not over_write:
             raise IOError("Cannot overwrite %s" % LHCO_name)
 
-        preamble = """LHCO file created with LHCO_reader (https://github.com/innisfree/LHCO_reader).
-See http://madgraph.phys.ucl.ac.be/Manual/lhco.html for a description of the LHCO format."""
+        preamble = ("LHCO file created with LHCO_reader "
+                    "(https://github.com/innisfree/LHCO_reader).\n"
+                    "See http://madgraph.phys.ucl.ac.be/Manual/lhco.html "
+                    "for a description of the LHCO format."
+                    )
         print(comment(preamble), file=open(LHCO_name, "w"), end="\n\n")
         print(comment(self), file=open(LHCO_name, "a"), end="\n\n")
 
@@ -1004,9 +1011,7 @@ class PrintDict(OrderedDict):
 
         :returns: Table of the dictionary contents
         :rtype: string
-
         """
-
         # Make table of dictionary keys and entries
         table = pt(self.keys())
         table.add_row(self.values())
@@ -1137,14 +1142,14 @@ class Objects(list):
 
         return combination
 
-    def __getslice__(self, i, j):
+    def __getslice__(self, index_i, index_j):
         """
         Slicing returns another :class:`Objects` rather than a list.
 
-        :param i: Opening index
-        :type i: integer
-        :param j: Closing index
-        :type j: integer
+        :param index_i: Opening index
+        :type index_i: integer
+        :param index_j: Closing index
+        :type index_j: integer
 
         :returns: Sliced class:`Objects` class
         :rtype: class:`Objects`
@@ -1159,7 +1164,7 @@ class Objects(list):
         |  jet   | -0.19  | 1.328 | 130.96 |  12.3 | 18.0 | 0.0  | 10.67 |
         +--------+--------+-------+--------+-------+------+------+-------+
         """
-        return Objects(list.__getslice__(self, i, j))
+        return Objects(list.__getslice__(self, index_i, index_j))
 
     def __mul__(self, other):
         """
@@ -1363,7 +1368,8 @@ class Event(dict):
             self.__parse()  # Parse the event
             # Check whether agrees with LHCO file
             if self.__count_file() != self.count_parsed():
-                warnings.warn("Inconsistent numbers of objects in event:\n %s" % str(self))
+                warnings.warn("Inconsistent numbers of objects in "
+                              "event:\n %s" % str(self))
         else:
             warnings.warn("Adding empty event")
 
@@ -1711,13 +1717,11 @@ class Event(dict):
         supersymmetry. See `arXiv:1303.2985 <http://arxiv.org/abs/1303.2985>`_.
 
         .. math::
-            \alpha_T = \frac12 \frac{H_T - \Delta H_T}{\sqrt{H_T^2 - \Delta H_T^2}}
+            \alpha_T = \frac12 \frac{H_T - \Delta H_T}
+                                    {\sqrt{H_T^2 - \Delta H_T^2}}
 
         There are various algorithms for calculating :math:`\Delta H_T`.
         See :func:`delta_HT`.
-
-        :param algorithm: Choice of algorithm for :math:`\Delta H_T`
-        :type algorithm: string
 
         :returns: :math:`\alpha_T` variable
         :rtype: float
@@ -1725,7 +1729,8 @@ class Event(dict):
         >>> events[0].alpha_T()
         1.4148163330213006
         """
-        assert len(self["jet"]) > 1, "Calcuating alpha_T for event with one or no jets"
+        error_message = "Calculating alpha_T for event with one or no jets"
+        assert len(self["jet"]) > 1, error_message
 
         HT = self.HT()
         MHT = self.MHT()
@@ -1737,7 +1742,7 @@ class Event(dict):
         Divide :math:`n`-jets into two mega-jets as described in
         `arXiv:1502.00300 <http://arxiv.org/abs/1502.00300>`_.
 
-        The choice of mega-jets minizes the sum of the invariant masses of
+        The choice of mega-jets minimizes the sum of the invariant masses of
         the two mega-jets.
 
         This is a non-standard
@@ -1745,8 +1750,8 @@ class Event(dict):
         It differs from regular partition problems because we attempt to
         minimize a sum of invariant masses and invariant mass is non-linear.
 
-        :returns: Fourmomentum of each mega-jet
-        :rype: List of :class:`Fourmomentum`
+        :returns: Four-momentum of each mega-jet
+        :rtype: List of :class:`Fourmomentum`
 
         >>> for mega_jet in events[0].mega_jets():
         ...     print(mega_jet)
@@ -1764,23 +1769,26 @@ class Event(dict):
         +---------------+--------------+---------------+---------------+
         54.6899293451
         """
-        assert len(self["jet"]) > 1, "Attempting to combine one or no jets in mega-jets"
+        error_message = "Attempting to combine one or no jets in mega-jets"
+        assert len(self["jet"]) > 1, error_message
 
         all_jets = [jet.vector() for jet in self["jet"]]
         all_jets.sort(key=lambda jet: abs(jet), reverse=True)
-        mass = lambda mega_jet_1, mega_jet_2: abs(mega_jet_1) + abs(mega_jet_2)
-        mega_jets = pp.non_standard_solver(all_jets, mass, algorithm=RAZOR_ALGORITHM)
+        mass = lambda mega_1, mega_2: abs(mega_1) + abs(mega_2)
+        mega_jets = pp.non_standard_solver(all_jets,
+                                           mass,
+                                           algorithm=RAZOR_ALGORITHM)
         return mega_jets
 
     def razor_MR(self):
         r"""
-        The razor :math`M^R` variable, as described in
+        The razor :math:`M^R` variable, as described in
         `arXiv:1502.00300 <http://arxiv.org/abs/1502.00300>`_.
 
         .. math::
-            M^R = sqrt{(|\vec j_1| + |\vec j_2|)^2 - (j_1^z j_2^z)^2}
+            M^R = \sqrt{(|\vec j_1| + |\vec j_2|)^2 - (j_1^z j_2^z)^2}
 
-        :returns: The razor :math`M_R` variable
+        :returns: The razor :math:`M_R` variable
         :rtype: float
 
         >>> events[0].razor_MR()
@@ -1788,18 +1796,20 @@ class Event(dict):
         """
         jet_1, jet_2 = self.mega_jets()
         abs_vector = lambda jet: (jet[1]**2 + jet[2]**2 + jet[3]**2)**0.5
-        MR = ((abs_vector(jet_1) + abs_vector(jet_2))**2 - (jet_1[3] + jet_2[3])**2)**0.5
+        MR = ((abs_vector(jet_1) + abs_vector(jet_2))**2
+              - (jet_1[3] + jet_2[3])**2
+              )**0.5
         return MR
 
     def razor_MRT(self):
         r"""
-        The razor :math`M^R_T` variable, as described in
+        The razor :math:`M^R_T` variable, as described in
         `arXiv:1502.00300 <http://arxiv.org/abs/1502.00300>`_.
 
         .. math::
             M^R_T = \sqrt{1/2} \sqrt{E_T j_T - E_x j_x - E_y j_y}
 
-        :returns: The razor :math`M^R_T` variable
+        :returns: The razor :math:`M^R_T` variable
         :rtype: float
 
         >>> events[0].razor_MRT()
@@ -1808,18 +1818,20 @@ class Event(dict):
         jet_1, jet_2 = self.mega_jets()
         jet = jet_1 + jet_2
         MET = self["MET"][0].vector()
-        MRT = (0.5 * (MET.PT() * jet.PT() - MET[1] * jet[1] - MET[2] * jet[2]))**0.5
+        MRT = (0.5**0.5 *
+               (MET.PT() * jet.PT() - MET[1] * jet[1] - MET[2] * jet[2])**0.5
+               )
         return MRT
 
     def razor_R(self):
         r"""
-        The razor :math`R` variable, as described in
+        The razor :math:`R` variable, as described in
         `arXiv:1502.00300 <http://arxiv.org/abs/1502.00300>`_.
 
         .. math::
             R = M_T^R / M_R
 
-        :returns: The razor :math`R` variable
+        :returns: The razor :math:`R` variable
         :rtype: float
 
         >>> events[0].razor_R()
@@ -1855,7 +1867,7 @@ class Event(dict):
         Calculate the vector sum of transverse energy in an event:
 
         .. math::
-            MET = |\sum \vec p_T|
+            \textrm{MET} = |\sum \vec p_T|
 
         .. warning::
           Detector-simulators compute MET, which is stored in the \
@@ -1903,7 +1915,7 @@ class Event(dict):
         >>> print(events[0].HT())
         330.48
         """
-        assert len(self["jet"]) > 0, "Calcuating HT for event with no jets"
+        assert len(self["jet"]) > 0, "Calculating HT for event with no jets"
         return sum([object_["PT"] for object_ in self["jet"]])
 
     def MHT(self):
@@ -1911,7 +1923,7 @@ class Event(dict):
         Calculate the vector sum of transverse energy in jets in an event:
 
         .. math::
-            MHT = |\sum_j \vec p_T|
+            \textrm{MHT} = |\sum_j \vec p_T|
 
         :returns: MHT, vector sum of transverse energy in jets in an event
         :rtype: float
@@ -1921,7 +1933,7 @@ class Event(dict):
         >>> print(events[0].MHT())
         309.603169784
         """
-        assert len(self["jet"]) > 0, "Calcuating MHT for event with no jets"
+        assert len(self["jet"]) > 0, "Calculating MHT for event with no jets"
 
         MHT_vector = sum([object_.vector() for object_ in self["jet"]])
         MHT = MHT_vector.PT()
@@ -2248,7 +2260,8 @@ class Fourvector(np.ndarray):
         16.0
         """
         if power % 2 or not isinstance(power, int):
-            raise ValueError("Only even integer powers supported: %i" % power)
+            raise ValueError("Only even integer powers supported: "
+                               "%i" % power)
 
         return self.__mul__(self)**(power / 2)
 
@@ -2258,7 +2271,6 @@ class Fourvector(np.ndarray):
 
         :returns: Table of the four-vector
         :rtype: string
-
         """
 
         headings = ["E", "P_x", "P_y", "P_z"]
@@ -2311,12 +2323,13 @@ class Fourvector(np.ndarray):
 
     def phi(self):
         r"""
-        Find angle :math:`\phi` around beam line from [0., 2.*pi].
+        Find angle :math:`\phi` around beam line from :math:`[0, 2\pi)`.
 
         .. math::
             \phi = \arctan(p_y, p_x)
 
-        :returns: Angle around beam line, :math:`\phi` from [0., 2.*pi]
+        :returns: Angle around beam line, :math:`\phi` from \
+        :math:`[0, 2\pi)`
         :rtype: float
 
         :Example:
@@ -2328,7 +2341,7 @@ class Fourvector(np.ndarray):
         """
 
         phi = atan(self[2], self[1])
-        assert 0. <= phi <= 2. * pi, r"Angle \phi not in [0., 2.*pi]"
+        assert 0. <= phi <= 2. * pi, r"Angle \phi not in [0, 2\pi)"
 
         return phi
 
@@ -2353,13 +2366,14 @@ class Fourvector(np.ndarray):
 
     def theta(self):
         r"""
-        Find angle math: `\theta` between vector and beam line from [0., pi].
+        Find angle math: `\theta` between vector and beam line from
+        :math:`[0, \pi)`.
 
         .. math::
             \theta = \arctan(r/z)
 
         :returns: Angle math: `\theta` between vector and beam line \
-        from [0., pi].
+        from :math:`[0, \pi)`.
         :rtype: float
 
         :Example:
@@ -2373,7 +2387,7 @@ class Fourvector(np.ndarray):
         beam_length = self[3]
         theta = atan(transverse_length, beam_length)
 
-        assert 0. <= theta <= pi, r"Angle \theta not in [0., \pi]"
+        assert 0. <= theta <= pi, r"Angle \theta not in [0, \pi)"
 
         return theta
 
@@ -2478,7 +2492,6 @@ class Fourvector(np.ndarray):
         >>> p = Fourvector(x)
         >>> print(p.gamma())
         1.02062072616
-
         """
         mass = abs(self)
         assert mass, "Mass must be > 0: %s" % mass
@@ -2499,7 +2512,6 @@ class Fourvector(np.ndarray):
         >>> p = Fourvector(x)
         >>> print(p.beta())
         0.2
-
         """
 
         beta = (1. - self.gamma()**-2)**0.5
@@ -2523,7 +2535,6 @@ class Fourvector(np.ndarray):
         >>> p = Fourvector(x)
         >>> print(p.beta_rest())
         [ 0.2  0.2  0.2]
-
         """
         beta_norm = self.beta()
         beta = self.unit_vector() * beta_norm
@@ -2671,15 +2682,15 @@ def atan(y_length, x_length):
     .. math::
         \arctan(y / x)
 
-    but with correct quadrant and from [0., 2.*pi].
+    but with correct quadrant and from :math:`[0, 2\pi)`.
 
     :param y_length: :math:`y`-length
     :type y_length: float
     :param x_length: :math:`x`-length
     :type x_length: float
 
-    :returns: Angle from [0., 2.*pi]
-    :rytpe: float
+    :returns: Angle from :math:`[0, 2\pi)`.
+    :rtype: float
 
     >>> atan(1,1)
     0.78539816339744828
@@ -2704,15 +2715,16 @@ def atan(y_length, x_length):
 
 def acute(phi_1, phi_2):
     r"""
-    Find acute angle :math:`\Delta\phi` between two angles from [0., pi].
+    Find acute angle :math:`\Delta\phi` between two angles from
+    :math:`[0, \pi)`.
 
     :param phi_1: First angle, :math:`\phi_1`
     :type phi_1: float
     :param phi_2: Second angle, :math:`\phi_2`
     :type phi_2: float
 
-    :returns: Acute angle from [0., pi]
-    :rytpe: float
+    :returns: Acute angle from :math:`[0, \pi)`.
+    :rtype: float
 
     >>> acute(2. * pi, 0.)
     0.0
@@ -2720,13 +2732,13 @@ def acute(phi_1, phi_2):
     0.20000000000000107
     """
 
-    # Consider difference on [0., 2.*pi]
+    # Consider difference on [0., 2.*pi)
     delta_phi = (phi_1 - phi_2) % (2. * pi)
 
     # Consider acute angle
     delta_phi = min(delta_phi, 2. * pi - delta_phi)
 
-    assert 0. <= delta_phi <= pi, r"Angle \Delta\phi not in [0., pi]"
+    assert 0. <= delta_phi <= pi, r"Angle \Delta\phi not in [0, \pi)"
 
     return delta_phi
 

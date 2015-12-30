@@ -52,7 +52,8 @@ try:
     OXBRIDGE_PATH = os.environ["OXBRIDGE"]
     OXBRIDGE_LIB_PATH = os.environ["OXBRIDGE_LIB"]
 except:
-    raise ImportError("Couldn't read $OXBRIDGE or ${OXBRIDGE_LIB} bash variable")
+    raise ImportError("Couldn't read $OXBRIDGE "
+                        "or ${OXBRIDGE_LIB} bash variable")
 
 HEADER = os.path.join(OXBRIDGE_PATH, "Mt2/ChengHanBisect_Mt2_332_Calculator.h")
 assert os.path.isfile(HEADER), "Cannot find header file: %s" % HEADER
