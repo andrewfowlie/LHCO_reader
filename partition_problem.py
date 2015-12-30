@@ -22,11 +22,11 @@ arbitrary - it isn't simply the difference between the sums of the two subsets.
 from __future__ import print_function
 from __future__ import division
 
-import copy
 import sys
 import warnings
 
 from itertools import chain, combinations
+from bisect import insort
 
 ###############################################################################
 
@@ -41,7 +41,7 @@ __status__ = "Production"
 ###############################################################################
 
 
-def powerset(list_):
+def powerset(list_, half=False):
     """
     The set of all subsets, i.e. the powerset, of a set.
     See `itertools <https://docs.python.org/2/library/itertools.html>`_ and
@@ -52,6 +52,9 @@ def powerset(list_):
 
     :param list_: A list for which a powerset is desired
     :type list_: list
+    :param half: Build half the powerset - the missing half is contained in \
+    the complement
+    :type half: bool
 
     :returns: Powerset of original list
     :rtype: itertools.chain
@@ -60,8 +63,14 @@ def powerset(list_):
 
     >>> list(powerset([1, 2, 3]))
     [(), (1,), (2,), (3,), (1, 2), (1, 3), (2, 3), (1, 2, 3)]
+    >>> list(powerset([1, 2, 3], half=True))
+    [(), (1,), (2,), (3,)]
     """
-    combs = (combinations(list_, r) for r in range(len(list_) + 1))
+    if half:
+        max_r = int(len(list_) / 2)  # Round down
+    else:
+        max_r = len(list_)
+    combs = (combinations(list_, r) for r in range(max_r + 1))
     return chain.from_iterable(combs)
 
 ###############################################################################
@@ -82,14 +91,13 @@ def non_standard_brute(list_, measure_fn):
     :Example:
 
     >>> non_standard_brute(example_list, example_fn)
-    [194.31000000000003, 194.44999999999996]
+    [194.45, 194.31]
     """
+    sum_list = sum(list_)
     min_measure = None
-    for subset in powerset(list_):
+    for subset in powerset(list_, half=True):
         sum_1 = sum(subset)
-        # Insure sum of empty subset is of correct type
-        sum_1 += list_[0] * 0.
-        sum_2 = sum(list_) - sum_1
+        sum_2 = sum_list - sum_1
         measure = measure_fn(sum_1, sum_2)
         if min_measure is None or measure < min_measure:
             min_measure = measure
@@ -121,20 +129,18 @@ def non_standard_greedy(list_, measure_fn):
     [195.31, 193.45000000000002]
     """
 
-    measure = 0.
-    # Initialize sums to zero, but of the correct type
-    sum_1 = list_[0] * 0.
-    sum_2 = list_[0] * 0.
-
+    sum_1 = 0.
+    sum_2 = 0.
     for item in list_:
         # Assign item to subset such that afffect on measure is minimal
-        measure = measure_fn(sum_1, sum_2)
-        diff_1 = measure_fn(sum_1 + item, sum_2) - measure
-        diff_2 = measure_fn(sum_1, sum_2 + item) - measure
-        if diff_1 < diff_2:
-            sum_1 += item
+        trial_1 = sum_1 + item
+        measure_1 = measure_fn(trial_1, sum_2)
+        trial_2 = sum_2 + item
+        measure_2 = measure_fn(sum_1, trial_2)
+        if measure_1 < measure_2:
+            sum_1 = trial_1
         else:
-            sum_2 += item
+            sum_2 = trial_2
 
     sums = [sum_1, sum_2]
     return sums
@@ -162,11 +168,9 @@ def greedy(list_):
     >>> greedy(example_list)
     8.46
     """
-    internal_list = copy.deepcopy(list_)
+    list_ = sorted(list_, reverse=True)
     diff = 0.
-    internal_list.sort(reverse=True)
-
-    for item in internal_list:
+    for item in list_:
         if diff <= 0.:
             diff += item
         else:
@@ -197,14 +201,16 @@ def KK(list_):
     >>> KK(example_list)
     0.14000000000001078
     """
-    internal_list = copy.deepcopy(list_)
-    while len(internal_list) > 1:
-        internal_list.sort(reverse=True)
-        diff = internal_list[0] - internal_list[1]
-        del internal_list[0:2]
-        internal_list.append(diff)
+    list_ = list_[:]
+    list_append = list_.append
+    list_sort = list_.sort
+    while len(list_) > 1:
+        list_sort(reverse=True)
+        diff = list_[0] - list_[1]
+        del list_[0:2]
+        list_append(diff)
 
-    diff = internal_list[0]
+    diff = list_[0]
     return diff
 
 ###############################################################################
@@ -225,15 +231,15 @@ def brute(list_):
     :rtype: float
 
     >>> brute(example_list)
-    0.13999999999992951
+    0.13999999999998636
     """
-    internal_list = copy.deepcopy(list_)
-    if len(internal_list) > 20:
+    if len(list_) > 20:
         warnings.warn("Large powerset - consider an alternative strategy")
 
-    sum_ = sum(internal_list)
+    sum_ = sum(list_)
     diff_subset = lambda subset: abs(sum_ - 2. * sum(subset))
-    diff = min([diff_subset(subset) for subset in powerset(internal_list)])
+    diff_set = map(diff_subset, powerset(list_, half=True))
+    diff = min(diff_set)
     return diff
 
 ###############################################################################
@@ -247,15 +253,15 @@ def prune(CKK_branch):
     :param CKK: A call for a branch in CKK algorithm
     :type branch: function
     """
-    def pruner(list_, first=True):
+    def pruner(list_, branch=False):
         """
         Preliminary aspects of complete Karmarkar-Karp algorithm,
         including checking whether to prune a branch.
 
         :param list_: List of elements
         :type list_: list
-        :param first: Whether first in recursive calls to CKK algorithm
-        :type first: bool
+        :param branch: Whether a branch in a CKK search
+        :type branch: bool
 
         :returns: Result of :func:`branch` possibly halted
         :rtype: float
@@ -267,63 +273,59 @@ def prune(CKK_branch):
         >>> CKK(example_list)
         0.13999999999998414
         """
-        internal_list = copy.deepcopy(list_)
+        if len(list_) == 1:
 
-        # Reset minimum, if neccessary
-        if first:
+            return list_[-1]
+
+        if not branch:
+
+            # Sort branch and reset minimum, if neccessary
+            list_ = sorted(list_)
             pruner.min = float("inf")
+            return CKK_branch(list_)
 
-        # Check whether end of branch or whether optimal solution achieved
-        if pruner.min == 0.:
+        elif pruner.min < list_[-1] - sum(list_[:-1]):
+
+            # Prune branch
             return pruner.min
-        elif len(internal_list) == 1:
-            return list_[0]
 
-        # Sort branch
-        internal_list.sort(reverse=True)
+        elif pruner.min == 0.:
 
-        # Prune branch
-        if pruner.min < internal_list[0] - sum(internal_list[1:]):
-            return internal_list[0]
+            # Optimum solution reached
+            return pruner.min
 
-        # Find minimum in branch and track minimum of all branches
-        min_branch = CKK_branch(internal_list)
-        pruner.min = min(pruner.min, min_branch)
-
-        return min_branch
+        else:
+            # Find minimum in branch and track minimum of all branches
+            min_branch = CKK_branch(list_)
+            pruner.min = min(pruner.min, min_branch)
+            return min_branch
 
     pruner.__name__ = CKK_branch.__name__
-    pruner.min = float("inf")
     return pruner
 
 
 @prune
-def CKK(list_, first=True):
+def CKK(list_):
     """
     Divide elements into two approximately equal subsets
     with a complete Karmarkar-Karp algorithm.
 
     :param list_: A list of positive numbers
     :type list_: list
-    :param first: Whether first in recursive calls to CKK algorithm
-    :type first: bool
 
     :returns: Minimum difference between sums of subsets
     :rtype: float
     """
-    internal_list = copy.deepcopy(list_)
     # Replace maximum two numbers by their difference and their sum in two
     # branches
-    diff = internal_list[0] - internal_list[1]
-    sum_ = internal_list[0] + internal_list[1]
-    sum_tree = copy.deepcopy(internal_list)
-    diff_tree = copy.deepcopy(internal_list)
-    del sum_tree[0:2]
-    del diff_tree[0:2]
-    sum_tree.append(sum_)
-    diff_tree.append(diff)
+    diff = list_[-1] - list_[-2]
+    sum_ = list_[-1] + list_[-2]
+    del list_[-2:]
+    sum_tree = list_ + [sum_]
+    diff_tree = list_[:]
+    insort(diff_tree, diff)
 
-    return min(CKK(diff_tree, first=False), CKK(sum_tree, first=False))
+    return min(CKK(diff_tree, branch=True), CKK(sum_tree, branch=True))
 
 ###############################################################################
 
@@ -341,7 +343,7 @@ def solver(list_, algorithm="CKK"):
     :Example:
 
     >>> solver(example_list, algorithm="brute")
-    0.13999999999992951
+    0.13999999999998636
     """
     this_module = sys.modules[__name__]
     try:
@@ -371,7 +373,7 @@ def non_standard_solver(list_, measure_fn, algorithm="non_standard_brute"):
 
     >>> non_standard_solver(example_list, example_fn,
     ...                     algorithm="non_standard_brute")
-    [194.31000000000003, 194.44999999999996]
+    [194.45, 194.31]
     """
     this_module = sys.modules[__name__]
     try:
