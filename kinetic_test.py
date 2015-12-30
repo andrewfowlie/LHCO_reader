@@ -196,16 +196,16 @@ Time calculations
 ...     print("time = %s" % delta_t)
 brute
 \alpha_T = 1.27640720482
-time = 0.074187040329
+time = 0.031200170517
 KK
 \alpha_T = 1.27029936157
-time = 0.000606060028076
+time = 0.00058388710022
 greedy
 \alpha_T = 1.25718917547
-time = 0.000520944595337
+time = 0.000498056411743
 CKK
 \alpha_T = 1.27640720482
-time = 0.0473201274872
+time = 0.00618004798889
 
 ===================
 Test Razor variable
@@ -224,10 +224,10 @@ Test Razor variable
 ...     print("time = %s" % delta_t)
 non_standard_brute
 R = 0.0631241278697
-time = 8.4502620697
+time = 1.9290368557
 non_standard_greedy
 R = 0.0609811416566
-time = 0.0043089389801
+time = 0.00334310531616
 """
 
 ###############################################################################
