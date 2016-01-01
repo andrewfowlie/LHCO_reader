@@ -147,12 +147,12 @@ def MT2(object_1, object_2, MET):
     `arXiv:1411.4312 <http://arxiv.org/abs/1411.4312>`_ from
     four-momentum objects by calling the wrapper function.
 
-    :param object_1: Four-momentum of first visible object
-    :type object_1: :class:`Fourmomentum`
-    :param object_2: Four-momentum of second visible object
-    :type object_2: :class:`Fourmomentum`
-    :param MET: Four-momentum of invisible MET
-    :type MET: :class:`Fourmomentum`
+    :param object_1: First visible object
+    :type object_1: :class:`Object`
+    :param object_2: Second visible object
+    :type object_2: :class:`Object`
+    :param MET: Invisible MET
+    :type MET: :class:`Object`
 
     :returns: :math:`M_{T2}` variable
     :rtype: float
