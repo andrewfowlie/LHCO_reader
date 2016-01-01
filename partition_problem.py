@@ -201,17 +201,12 @@ def KK(list_):
     >>> KK(example_list)
     0.14000000000001078
     """
-    list_ = list_[:]
-    list_append = list_.append
-    list_sort = list_.sort
+    list_ = sorted(list_)
     while len(list_) > 1:
-        list_sort(reverse=True)
-        diff = list_[0] - list_[1]
-        del list_[0:2]
-        list_append(diff)
+        diff = list_.pop() - list_.pop()
+        insort(list_, diff)
 
-    diff = list_[0]
-    return diff
+    return list_[0]
 
 ###############################################################################
 
