@@ -236,6 +236,7 @@ from __future__ import print_function
 from __future__ import division
 
 import LHCO_reader
+import warnings
 
 ###############################################################################
 
@@ -279,6 +280,14 @@ def object_fourvector(momentum, name="jet"):
     :rtype: :class:`Object`
     """
 
+    # Find invariant mass of four-vector, catching errors related to
+    # negative masses
+    try:
+        mass = abs(momentum)
+    except AssertionError as error:
+        warnings.warn(error.message)
+        mass = 0.
+
     # Don't need all of this data - for many things, just put something
     # arbitrary
     dictionary = {"event": 1,
@@ -286,7 +295,7 @@ def object_fourvector(momentum, name="jet"):
                   "eta": momentum.eta(),
                   "phi": momentum.phi(),
                   "PT": momentum.PT(),
-                  "jmass": abs(momentum),
+                  "jmass": mass,
                   "ntrk": 1,
                   "btag": 0,
                   "hadem": 1.
