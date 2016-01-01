@@ -106,10 +106,9 @@ def MT2W_wrapper(pl, pb1, pb2, pmiss, upper_bound=1000., error_value=0.):
     # Code for calculating MT2 variable in C++. This snippet returns
     # the MT2 variable.
     code = """
-           using namespace std;
            mt2w_bisect::mt2w mt2w_event(upper_bound, error_value);
            mt2w_event.set_momenta(pl, pb1, pb2, pmiss);
-	       const float mt2w = mt2w_event.get_mt2w();
+           const float mt2w = mt2w_event.get_mt2w();
            return_val = mt2w;
            """
 
