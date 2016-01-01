@@ -372,12 +372,12 @@ def non_standard_solver(list_, measure_fn, algorithm="non_standard_brute"):
     """
     this_module = sys.modules[__name__]
     try:
-        diff = getattr(this_module, algorithm)(list_, measure_fn)
+        sums = getattr(this_module, algorithm)(list_, measure_fn)
     except AttributeError:
         print("Unknown algorithm: %s" % algorithm)
         raise
 
-    return diff
+    return sums
 
 ###############################################################################
 
