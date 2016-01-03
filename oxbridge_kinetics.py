@@ -128,7 +128,7 @@ def MT2_wrapper(m_1, p1_x, p1_y, m_2, p2_x, p2_y, m_MET, MET_x, MET_y):
     frame = inspect.currentframe()
     args = inspect.getargvalues(frame)[0]
 
-    # Compile and exectute code. If code is unchanged, it won't be recompiled
+    # Compile and execute code. If code is unchanged, it won't be recompiled
     lib_MT2 = inline(code,
                      args,
                      headers=HEADERS,

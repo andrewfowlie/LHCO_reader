@@ -116,7 +116,7 @@ def MT2W_wrapper(pl, pb1, pb2, pmiss, upper_bound=1000., error_value=0.):
     frame = inspect.currentframe()
     args = inspect.getargvalues(frame)[0]
 
-    # Compile and exectute code. If code is unchanged, it won't be recompiled
+    # Compile and execute code. If code is unchanged, it won't be recompiled
     lib_MT2W = inline(code,
                       args,
                       headers=HEADERS,
@@ -134,7 +134,7 @@ def MT2W(lepton, bottom_1, bottom_2, MET):
     `arXiv:1411.4312 <http://arxiv.org/abs/1411.4312>`_ from
     four-momentum objects by calling the wrapper function.
 
-    :param olepton: Lepton
+    :param lepton: Lepton
     :type lepton: :class:`Object`
     :param bottom_1: First bottom, on lepton's side of event
     :type bottom_1: :class:`Object`

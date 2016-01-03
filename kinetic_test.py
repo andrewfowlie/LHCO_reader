@@ -308,7 +308,7 @@ def event_fourvector(momenta, names=None):
     """
     Build an :class:`Event` from a set of :class:`Fourvector` objects.
 
-    :param momenta: List of fourmomenta of objects in an event
+    :param momenta: List of four-momenta of objects in an event
     :type momenta: list of class:`Fourvector`
     :param names: Names of objects
     :type names: list of strings

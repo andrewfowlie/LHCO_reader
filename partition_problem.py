@@ -11,9 +11,9 @@ and non-standard partition problems.
 We implement greedy, brute force and Karmarkar-Karp algorithms.
 
 In the standard problem, we attempt to divide a set into two subsets,
-such that the difference between the sums of the subsets is minimized.
+such that the difference between the sums of the subsets is minimised.
 
-In the non-standard problem, the function to be minimized is
+In the non-standard problem, the function to be minimised is
 arbitrary - it isn't simply the difference between the sums of the two subsets.
 """
 
@@ -82,10 +82,10 @@ def non_standard_brute(list_, measure_fn):
 
     :param list_: List of elements of any type
     :type list_: list
-    :param measure_fn: Function for measure to be minimized for two subsums
+    :param measure_fn: Function for measure to be minimised for two sub-sums
     :type measure_fn: function
 
-    :returns: Sums of two subsets, chosen such that measure minimized
+    :returns: Sums of two subsets, chosen such that measure minimised
     :rtype: list
 
     :Example:
@@ -117,10 +117,10 @@ def non_standard_greedy(list_, measure_fn):
 
     :param list_: List of elements of any type
     :type list_: list
-    :param measure_fn: Function for measure to be minimized for two subsums
+    :param measure_fn: Function for measure to be minimised for two sub-sums
     :type measure_fn: function
 
-    :returns: Sums of two subsets, chosen such that measure minimized
+    :returns: Sums of two subsets, chosen such that measure minimised
     :rtype: list
 
     :Example:
@@ -132,7 +132,7 @@ def non_standard_greedy(list_, measure_fn):
     sum_1 = 0.
     sum_2 = 0.
     for item in list_:
-        # Assign item to subset such that afffect on measure is minimal
+        # Assign item to subset such that affect on measure is minimal
         trial_1 = sum_1 + item
         measure_1 = measure_fn(trial_1, sum_2)
         trial_2 = sum_2 + item
@@ -274,7 +274,7 @@ def prune(CKK_branch):
 
         if not branch:
 
-            # Sort branch and reset minimum, if neccessary
+            # Sort branch and reset minimum, if necessary
             list_ = sorted(list_)
             pruner.min = float("inf")
             return CKK_branch(list_)
@@ -358,10 +358,10 @@ def non_standard_solver(list_, measure_fn, algorithm="non_standard_brute"):
 
     :param algorithm: Choice of algorithm
     :type algorithm: string
-    :param measure_fn: Function for measure to be minimized for two subsums
+    :param measure_fn: Function for measure to be minimised for two sub-sums
     :type measure_fn: function
 
-    :returns: Sums of two subsets, chosen such that measure minimized
+    :returns: Sums of two subsets, chosen such that measure minimised
     :rtype: list
 
     :Example:
