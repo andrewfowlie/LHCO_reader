@@ -58,6 +58,7 @@ LIBRARIES = ["mt2w"]
 
 ###############################################################################
 
+
 def MT2W_wrapper(pl, pb1, pb2, pmiss, upper_bound=1000., error_value=0.):
     """
     Calculate :math:`M_{T2}^W` variable from
@@ -127,6 +128,7 @@ def MT2W_wrapper(pl, pb1, pb2, pmiss, upper_bound=1000., error_value=0.):
                       )
 
     return lib_MT2W
+
 
 def MT2W(lepton, bottom_1, bottom_2, MET):
     """

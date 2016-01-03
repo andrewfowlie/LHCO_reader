@@ -2261,7 +2261,7 @@ class Fourvector(np.ndarray):
         """
         if power % 2 or not isinstance(power, int):
             raise ValueError("Only even integer powers supported: "
-                               "%i" % power)
+                             "%i" % power)
 
         return self.__mul__(self)**(power / 2)
 
