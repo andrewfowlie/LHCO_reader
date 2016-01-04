@@ -1,0 +1,9 @@
+setup.cfg
+setup.py
+LHCO_reader/LHCO_converter.py
+LHCO_reader/LHCO_reader.py
+LHCO_reader/__init__.py
+LHCO_reader/kinetic_test.py
+LHCO_reader/mt2w.py
+LHCO_reader/oxbridge_kinetics.py
+LHCO_reader/partition_problem.py

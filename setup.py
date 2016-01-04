@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(name='LHCO_reader',
       packages=['LHCO_reader'],  # this must be the same as the name above
-      version='1.6.0',
+      version='1.6.1',
       install_requires=['prettytable', 'numpy'],
       package_data={'example': ['example.lhco']},
       description='Module for reading and analyzing LHCO files',
