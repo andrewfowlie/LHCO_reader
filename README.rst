@@ -6,7 +6,7 @@ Introduction
 
 :mod:`LHCO_reader` is a Python module for reading `LHCO files <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_ from detector simulators such as `PGS <http://www.physics.ucdavis.edu/~conway/research/software/pgs/pgs4-general.htm>`_ into a Python class, with useful functions for implementing an analysis. It can also read ROOT files from `Delphes <https://cp3.irmp.ucl.ac.be/projects/delphes>`_, by immediately converting them to LHCO files.
 
-:mod:`LHCO_reader` can calculate :math:`\alpha_T` and razor variables, and $M_{T2}$ and $M_{T2}^W$ variables are included by linking :mod:`LHCO_reader` with external libraries.
+:mod:`LHCO_reader` can calculate :math:`\alpha_T` and razor variables, and :math:`M_{T2}` and :math:`M_{T2}^W` variables are included by linking :mod:`LHCO_reader` with external libraries.
 
 For the full documentation, `read the online docs <http://lhco-reader.readthedocs.org/>`_. For a tutorial and further background information, see the manual at `arXiv:1510.07319 <http://arxiv.org/abs/1510.07319>`_.
 

@@ -33,7 +33,15 @@ partition_problem
     :members:
     :special-members:
     :private-members:
+ 
+=================
+mt2w
+=================
     
+.. automodule:: mt2w
+    :members:
+    :special-members:
+    :private-members:    
     
 =================
 kinetic_test
