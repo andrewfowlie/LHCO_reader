@@ -19,7 +19,7 @@ import shlex
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../LHCO_reader/'))
 
 # -- General configuration ------------------------------------------------
 
@@ -290,5 +290,13 @@ texinfo_documents = [
 import sys
 import mock
 
-MOCK_MODULES = ['matplotlib', 'matplotlib.pyplot', 'LHCO_converter', 'numpy', 'scipy', 'prettytable']
+MOCK_MODULES = ['matplotlib', 
+                'matplotlib.pyplot', 
+                'numpy', 
+                'scipy', 
+                'prettytable',
+                'LHCO_converter',
+                'oxbridge_kinetics',
+                'mt2w'
+                ]
 sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)

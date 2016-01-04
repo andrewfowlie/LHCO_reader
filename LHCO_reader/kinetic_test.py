@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 r"""
 ============
-Kinetic test
+Introduction
 ============
 
 Test kinematic variables against Oxbridge library.

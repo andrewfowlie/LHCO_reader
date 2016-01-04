@@ -3,20 +3,32 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. include:: ../README.rst
-
-API
-===
-
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 10
    
-   API.rst
-   
-Indices and tables
-==================
+===========
+LHCO_reader 
+===========
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+.. automodule:: LHCO_reader
+    :members:
+    :special-members:
+    :private-members:
+        
+=================
+partition_problem
+=================
+    
+.. automodule:: partition_problem
+    :members:
+    :special-members:
+    :private-members:
+     
+=================
+kinetic_test
+=================
+    
+.. automodule:: kinetic_test
+    :members:
+    :special-members:
+    :private-members:     

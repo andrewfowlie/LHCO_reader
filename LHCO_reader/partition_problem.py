@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 r"""
-=================
-Partition problem
-=================
+============
+Introduction
+============
 
 Functions to solve the
 `partition problem <https://en.wikipedia.org/wiki/Partition_problem>`_
@@ -47,7 +47,7 @@ def powerset(list_, half=False):
     See `itertools <https://docs.python.org/2/library/itertools.html>`_ and
     `wiki <https://en.wikipedia.org/wiki/Power_set>`_.
 
-    .. warnings::
+    .. warning::
         A powerset of a set includes the empty subset and the set itself.
 
     :param list_: A list for which a powerset is desired
