@@ -155,6 +155,7 @@ from math import pi
 from numpy import cos, sin
 from collections import OrderedDict
 from prettytable import PrettyTable as pt
+from scipy.stats import f
 
 ###############################################################################
 
@@ -591,27 +592,60 @@ class Events(list):
         """
         return int(len(self) / self.acceptance())
 
-    def error_acceptance(self):
+    def interval_acceptance(self, crude=False):
         r"""
         Statistical error of estimate of acceptance (from :func:`acceptance`)
-        found from binomial statistics.
+        found from crude binomial statistics:
 
         .. math::
             \sigma = \sqrt{\frac{p (1 - p)}{n}}
 
-        :returns: Statistical error of acceptance
-        :rtype: float
+        or from a Clopper-Pearson approach. We find a :math:`1\sigma` interval
+        for the acceptance. See Agresti, Categorical Data Analysis, Sec 1.4.
+
+        :param crude: Use a crude estimate
+        :type crude: bool
+
+        :returns: Interval for acceptance
+        :rtype: list
+
+        :Example:
 
         >>> events = Events("example.lhco")
         >>> tau = lambda event: event.number()["tau"] == 1
         >>> events.cut(tau)
-        >>> events.error_acceptance()
-        0.0034108157382069172
+        >>> error = events.interval_acceptance()
+        >>> print(error)
+        [0.86212131009390147, 0.86900397180114064]
+        >>> print(0.5 * (error[1] - error[0]))
+        0.00344133085362
+        >>> error = events.interval_acceptance(crude=True)
+        >>> print(error)
+        [0.8621891842617931, 0.8690108157382069]
+        >>> print(0.5 * (error[1] - error[0]))
+        0.00341081573821
         """
-        acceptance = self.acceptance()
-        number_original = self.number_original()
-        error = (acceptance * (1. - acceptance) / number_original)**0.5
-        return error
+
+        n_t = self.number_original()  # Number of trial
+        k = len(self)  # Number of successes
+        hat_p = k / n_t  # Estimator of probability
+        alpha = 0.32  # Confidence level
+
+        if crude:
+
+            # Binomial estimate. See Eq 1.13 in Agresti
+            error = (hat_p * (1. - hat_p) / n_t)**0.5
+            interval = [hat_p - error, hat_p + error]
+
+        else:
+
+            # Clopper-Pearson formula. See Sec 1.4.4 in Agresti
+            f_isf = lambda x: f.isf(x, 2. * k, 2. * (n_t - k + 1.))
+            p_lower = (1. + (n_t - k + 1.) / (k * f_isf(1. - 0.5 * alpha)))**-1
+            p_upper = (1. + (n_t - k) / ((k + 1.) * f_isf(0.5 * alpha)))**-1
+            interval = [p_lower, p_upper]
+
+        return interval
 
     def summarize_cuts(self):
         """
@@ -625,11 +659,11 @@ class Events(list):
         >>> tau = lambda event: event.number()["tau"] == 1
         >>> events.cut(tau)
         >>> print(events.summarize_cuts())
-        +------------------------------------------------+------------------+
-        | tau = lambda event: event.number()["tau"] == 1 | 0.8656           |
-        | Combined acceptance                            | 0.8656           |
-        | Error acceptance                               | 0.00341081573821 |
-        +------------------------------------------------+------------------+
+        +------------------------------------------------+--------------------------------------------+
+        | tau = lambda event: event.number()["tau"] == 1 | 0.8656                                     |
+        | Combined acceptance                            | 0.8656                                     |
+        | 68% interval                                   | [0.86212131009390147, 0.86900397180114064] |
+        +------------------------------------------------+--------------------------------------------+
         """
         table = pt(header=False)
 
@@ -648,7 +682,7 @@ class Events(list):
         # Add information about combined acceptance
         if self.cut_list:
             table.add_row(["Combined acceptance", str(self.acceptance())])
-            table.add_row(["Error acceptance", str(self.error_acceptance())])
+            table.add_row(["68% interval", str(self.interval_acceptance())])
 
         table.align = "l"
         return table.get_string()
@@ -715,11 +749,11 @@ class Events(list):
         | Description      | example.lhco |
         +------------------+--------------+
         <BLANKLINE>
-        +------------------------------------------------+------------------+
-        | tau = lambda event: event.number()["tau"] == 1 | 0.8656           |
-        | Combined acceptance                            | 0.8656           |
-        | Error acceptance                               | 0.00341081573821 |
-        +------------------------------------------------+------------------+
+        +------------------------------------------------+--------------------------------------------+
+        | tau = lambda event: event.number()["tau"] == 1 | 0.8656                                     |
+        | Combined acceptance                            | 0.8656                                     |
+        | 68% interval                                   | [0.86212131009390147, 0.86900397180114064] |
+        +------------------------------------------------+--------------------------------------------+
         """
 
         len_org = len(self)  # Remember original length
@@ -786,11 +820,11 @@ class Events(list):
         | Description      | example.lhco |
         +------------------+--------------+
         <BLANKLINE>
-        +------------------------------------------+-----+
-        | PT = lambda object_: object_["PT"] < 30. | 1.0 |
-        | Combined acceptance                      | 1.0 |
-        | Error acceptance                         | 0.0 |
-        +------------------------------------------+-----+
+        +------------------------------------------+----------------------------+
+        | PT = lambda object_: object_["PT"] < 30. | 1.0                        |
+        | Combined acceptance                      | 1.0                        |
+        | 68% interval                             | [0.99981675864437303, 1.0] |
+        +------------------------------------------+----------------------------+
         """
 
         if name not in NAMES:
