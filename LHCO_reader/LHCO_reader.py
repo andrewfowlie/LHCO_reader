@@ -640,9 +640,17 @@ class Events(list):
         else:
 
             # Clopper-Pearson formula. See Sec 1.4.4 in Agresti
-            f_isf = lambda x: f.isf(x, 2. * k, 2. * (n_t - k + 1.))
-            p_lower = (1. + (n_t - k + 1.) / (k * f_isf(1. - 0.5 * alpha)))**-1
-            p_upper = (1. + (n_t - k) / ((k + 1.) * f_isf(0.5 * alpha)))**-1
+            if k == 0:
+                p_lower = 0.
+                p_upper = 1. - (0.5 * alpha)**(1. / n_t)
+            elif k == n_t:
+                p_lower = (0.5 * alpha)**(1. / n_t)
+                p_upper = 1.
+            else:
+                f_isf = lambda x: f.isf(x, 2. * k, 2. * (n_t - k + 1.))
+                p_lower = (1. + (n_t - k + 1.) / (k * f_isf(1. - 0.5 * alpha)))**-1
+                p_upper = (1. + (n_t - k) / ((k + 1.) * f_isf(0.5 * alpha)))**-1
+
             interval = [p_lower, p_upper]
 
         return interval
@@ -820,11 +828,11 @@ class Events(list):
         | Description      | example.lhco |
         +------------------+--------------+
         <BLANKLINE>
-        +------------------------------------------+----------------------------+
-        | PT = lambda object_: object_["PT"] < 30. | 1.0                        |
-        | Combined acceptance                      | 1.0                        |
-        | 68% interval                             | [0.99981675864437303, 1.0] |
-        +------------------------------------------+----------------------------+
+        +------------------------------------------+---------------------------+
+        | PT = lambda object_: object_["PT"] < 30. | 1.0                       |
+        | Combined acceptance                      | 1.0                       |
+        | 68% interval                             | [0.9998167586443736, 1.0] |
+        +------------------------------------------+---------------------------+
         """
 
         if name not in NAMES:
