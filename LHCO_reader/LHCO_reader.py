@@ -4,7 +4,7 @@ r"""
 Introduction
 ============
 
-:mod:`LHCO_reader` is a Python module for reading `LHCO files <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_ from detector simulators such as `PGS <http://www.physics.ucdavis.edu/~conway/research/software/pgs/pgs4-general.htm>`_ into a Python class, with useful functions for implementing an analysis. It can also read ROOT files from `Delphes <https://cp3.irmp.ucl.ac.be/projects/delphes>`_, by immediately converting them to LHCO files. :mod:`LHCO_reader` can calculate :math:`\alpha_T` and razor variables, and :math:`M_{T2}` and :math:`M_{T2}^W` variables are included by linking :mod:`LHCO_reader` with external libraries.
+:mod:`LHCO_reader` is a Python module for reading `LHCO files <http://madgraph.phys.ucl.ac.be/Manual/lhco.html>`_ from detector simulators such as `PGS <http://www.physics.ucdavis.edu/~conway/research/software/pgs/pgs4-general.htm>`_ into a Python class, with useful functions for implementing an analysis. It can also read ROOT files from `Delphes <https://cp3.irmp.ucl.ac.be/projects/delphes>`_, by immediately converting them to LHCO files, and zipped LHCO files (*.lhco.gz). :mod:`LHCO_reader` can calculate :math:`\alpha_T` and razor variables, and :math:`M_{T2}` and :math:`M_{T2}^W` variables are included by linking :mod:`LHCO_reader` with external libraries.
 
 For the full documentation, `read the online docs <http://lhco-reader.readthedocs.org/>`_. For a tutorial and further background information, see the manual at `arXiv:1510.07319 <http://arxiv.org/abs/1510.07319>`_.
 
@@ -147,6 +147,7 @@ from __future__ import division
 import os
 import warnings
 import inspect
+import gzip
 
 import numpy as np
 import partition_problem as pp
@@ -335,19 +336,31 @@ class Events(list):
 
         # Find/make and parse LHCO file
         self.LHCO_name = None
+        self.zipfile = None
+
         if not f_name:
             warnings.warn("Events class without a LHCO or ROOT file")
         elif not os.path.isfile(f_name):  # Check that file exists
             raise IOError("File does not exist: %s" % f_name)
         else:
-            # Consider file-type - ROOT or LHCO
-            f_extension = os.path.splitext(f_name)[1]
+            # Consider file-type - ROOT, LHCO or zipped LHCO
+            f_root, f_extension = os.path.splitext(f_name)
             if f_extension == ".root":
                 # Convert ROOT to LHCO file
                 import LHCO_converter
                 self.LHCO_name = LHCO_converter.ROOT_LHCO(f_name)
+                self.zipfile = False
             elif f_extension == ".lhco":
                 self.LHCO_name = f_name
+                self.zipfile = False
+            elif f_extension == ".gz":
+                # Zip of LHCO file
+                sub_extension = os.path.splitext(f_root)[1]
+                error_message = "For *.gz, only *.lhco.gz supported: %s"% f_name
+                assert sub_extension == ".lhco", error_message
+                warnings.warn("LHCO file is in fact a *.lhco.gz file")
+                self.LHCO_name = f_name
+                self.zipfile = True
             else:
                 raise IOError("Unknown file extension: %s" % f_name)
 
@@ -404,7 +417,12 @@ class Events(list):
         n_events = self.n_events
         event = None
 
-        with open(self.LHCO_name, 'r') as LHCO_file:
+        if self.zipfile:
+            open_ = gzip.open
+        else:
+            open_ = open
+
+        with open_(self.LHCO_name, 'r') as LHCO_file:
 
             for line in parse_lines(LHCO_file):
 
